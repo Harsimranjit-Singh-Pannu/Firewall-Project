@@ -1,0 +1,6073 @@
+﻿
+
+# FILE: C:\Users\simran\Desktop\Coding projects\Firewall-Project\tests\test_operation_executor.py
+
+import pytest
+from types import SimpleNamespace
+
+from rules.operation_executor import OperationExecutor
+from engine.context import ExecutionContext
+
+
+def operation(name, parameters):
+    return SimpleNamespace(
+        name=name,
+        parameters=parameters
+    )
+
+
+class TestOperationExecutor:
+
+    def setup_method(self):
+        self.executor = OperationExecutor()
+
+    # ============================================================
+    # General
+    # ============================================================
+
+    def test_none_operation_returns_false(self):
+        context = ExecutionContext()
+
+        result = self.executor.execute(
+            None,
+            context
+        )
+
+        assert result is False
+
+    def test_unsupported_operation_raises_error(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "unknown-operation",
+            {}
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Unsupported operation"
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    # ============================================================
+    # Set Parameter
+    # ============================================================
+
+    def test_set_parameter(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "set-parameter",
+            {
+                "name": "username",
+                "value": "Simran",
+                "datatype": "String"
+            }
+        )
+
+        self.executor.execute(
+            op,
+            context
+        )
+
+        parameter = context.get_parameter(
+            "username"
+        )
+
+        assert parameter is not None
+        assert parameter.value == "Simran"
+        assert parameter.datatype == "String"
+
+    def test_set_parameter_requires_context(self):
+        op = operation(
+            "set-parameter",
+            {
+                "name": "x",
+                "value": 10,
+                "datatype": "Integer"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="execution context"
+        ):
+            self.executor.execute(
+                op,
+                None
+            )
+
+    # ============================================================
+    # Arithmetic
+    # ============================================================
+
+    def test_arithmetic_add(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 30
+
+        parameter = context.get_parameter(
+            "total"
+        )
+
+        assert parameter.value == 30
+        assert parameter.datatype == "Integer"
+
+    def test_arithmetic_add_multiple_operands(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20, 30],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 60
+
+    def test_arithmetic_subtract(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [100, 20, 10],
+                "operator": "Subtract",
+                "result_parameter": "result"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 70
+
+    def test_arithmetic_multiply(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [2, 3, 4],
+                "operator": "Multiply",
+                "result_parameter": "result"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 24
+
+    def test_arithmetic_divide(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [100, 2, 5],
+                "operator": "Divide",
+                "result_parameter": "result"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 10
+
+    def test_arithmetic_saves_result(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        self.executor.execute(
+            op,
+            context
+        )
+
+        parameter = context.get_parameter(
+            "total"
+        )
+
+        assert parameter is not None
+        assert parameter.value == 30
+        assert parameter.datatype == "Integer"
+
+    def test_arithmetic_result_can_be_used_later(self):
+        context = ExecutionContext()
+
+        first = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        self.executor.execute(
+            first,
+            context
+        )
+
+        total = context.get_parameter(
+            "total"
+        )
+
+        second = operation(
+            "arithmetic",
+            {
+                "operands": [
+                    total.value,
+                    10
+                ],
+                "operator": "Multiply",
+                "result_parameter": "final"
+            }
+        )
+
+        result = self.executor.execute(
+            second,
+            context
+        )
+
+        assert result == 300
+
+        final = context.get_parameter(
+            "final"
+        )
+
+        assert final.value == 300
+
+    def test_arithmetic_parameter_value_can_be_used_as_operand(self):
+        context = ExecutionContext()
+
+        context.set_parameter(
+            name="amount",
+            value=50,
+            datatype="Integer"
+        )
+
+        amount = context.get_parameter(
+            "amount"
+        )
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [
+                    amount.value,
+                    25
+                ],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result == 75
+
+    def test_arithmetic_rejects_parameter_object(self):
+        context = ExecutionContext()
+
+        context.set_parameter(
+            name="amount",
+            value=50,
+            datatype="Integer"
+        )
+
+        amount = context.get_parameter(
+            "amount"
+        )
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [
+                    amount,
+                    25
+                ],
+                "operator": "Add",
+                "result_parameter": "total"
+            }
+        )
+
+        with pytest.raises(
+            TypeError
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    def test_arithmetic_division_by_zero(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [100, 0],
+                "operator": "Divide",
+                "result_parameter": "result"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Division by zero"
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    def test_arithmetic_requires_two_operands(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10],
+                "operator": "Add",
+                "result_parameter": "result"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="at least two operands"
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    def test_arithmetic_requires_list(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": 10,
+                "operator": "Add",
+                "result_parameter": "result"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="operands must be a list"
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    def test_arithmetic_invalid_operator(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20],
+                "operator": "Invalid",
+                "result_parameter": "result"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Unsupported arithmetic operator"
+        ):
+            self.executor.execute(
+                op,
+                context
+            )
+
+    def test_arithmetic_requires_context(self):
+        op = operation(
+            "arithmetic",
+            {
+                "operands": [10, 20],
+                "operator": "Add",
+                "result_parameter": "result"
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="execution context"
+        ):
+            self.executor.execute(
+                op,
+                None
+            )
+
+    # ============================================================
+    # Concatenate
+    # ============================================================
+
+    def test_concatenate(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "concatenate",
+            {
+                "values": [
+                    "hello",
+                    "world"
+                ],
+                "separator": " "
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "hello world"
+
+    # ============================================================
+    # Convert Integer
+    # ============================================================
+
+    def test_convert_integer(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "convert-integer",
+            {
+                "value": "123"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == 123
+
+    # ============================================================
+    # Convert String
+    # ============================================================
+
+    def test_convert_string(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "convert-string",
+            {
+                "value": 123
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "123"
+
+    # ============================================================
+    # Regex Match
+    # ============================================================
+
+    def test_regex_match(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "regex-match",
+            {
+                "value": "hello123",
+                "pattern": r"\d+"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result is not None
+
+    # ============================================================
+    # Regex Replace
+    # ============================================================
+
+    def test_regex_replace(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "regex-replace",
+            {
+                "value": "hello123",
+                "pattern": r"\d+",
+                "replacement": "456"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "hello456"
+
+    # ============================================================
+    # Base64 Decode
+    # ============================================================
+
+    def test_base64_decode(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "base64-decode",
+            {
+                "value": "aGVsbG8="
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "hello"
+
+    # ============================================================
+    # Hex Decode
+    # ============================================================
+
+    def test_hex_decode(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "hex-decode",
+            {
+                "value": "68656c6c6f"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "hello"
+
+    # ============================================================
+    # Base64 Encode
+    # ============================================================
+
+    def test_base64_encode(self):
+        context = ExecutionContext()
+
+        op = operation(
+            "base64-encode",
+            {
+                "value": "hello"
+            }
+        )
+
+        result = self.executor.execute(
+            op,
+            context
+        )
+
+        assert result["result"] == "aGVsbG8="
+
+# FILE: C:\Users\simran\Desktop\Coding projects\Firewall-Project\tests\test_operation_persistence.py
+
+import json
+
+from configuration.models.firewall_config import FirewallConfiguration
+from configuration.services.ruleset_service import RulesetService
+from configuration.services.rule_service import RuleService
+
+from drafts.draft_repository import DraftRepository
+from drafts.draft_service import DraftService
+
+from versions.version_service import VersionService
+from versions.version_repository import VersionRepository
+
+
+def test_operation_survives_version_commit_and_reload(
+    tmp_path
+):
+
+    version_repository = VersionRepository()
+
+    version_service = VersionService(
+        repository=version_repository
+    )
+
+    configuration = FirewallConfiguration()
+
+    base_version = version_service.create_version(
+        configuration=configuration,
+        name="Base Version"
+    )
+
+    draft_repository = DraftRepository()
+
+    draft_service = DraftService(
+        repository=draft_repository,
+        version_service=version_service
+    )
+
+    draft = draft_service.create_draft(
+
+        version_id=base_version.id,
+
+        configuration=base_version.configuration
+
+    )
+
+    ruleset_service = RulesetService(
+        draft_service
+    )
+
+    ruleset = ruleset_service.create_ruleset(
+        draft.id,
+        "Web Security"
+    )
+
+    rule = ruleset_service.add_rule(
+        draft.id,
+        ruleset.id,
+        "Allow Web Traffic"
+    )
+
+    rule_service = RuleService(
+        draft_service
+    )
+
+    operation = rule_service.create_operation(
+
+        draft.id,
+
+        ruleset.id,
+
+        rule.id,
+
+        "set-parameter",
+
+        {
+            "name": "risk",
+            "value": 10,
+            "scope": "REQUEST"
+        }
+
+    )
+
+    committed_version = version_service.create_version(
+
+        configuration=draft.configuration,
+
+        name="Web Traffic Version"
+
+    )
+
+    assert (
+        len(
+            committed_version.configuration.rulesets
+        )
+        == 1
+    )
+
+    committed_ruleset = (
+        committed_version.configuration.rulesets[0]
+    )
+
+    assert len(
+        committed_ruleset.rules
+    ) == 1
+
+    committed_rule = (
+        committed_ruleset.rules[0]
+    )
+
+    assert len(
+        committed_rule.operations
+    ) == 1
+
+    committed_operation = (
+        committed_rule.operations[0]
+    )
+
+    assert (
+        committed_operation.name
+        == "set-parameter"
+    )
+
+    assert (
+        committed_operation.id
+        == operation.id
+    )
+
+    assert (
+        committed_operation.parameters
+        == {
+            "name": "risk",
+            "value": 10,
+            "scope": "REQUEST"
+        }
+    )
+
+# FILE: C:\Users\simran\Desktop\Coding projects\Firewall-Project\tests\test_ruleset.py
+
+import copy
+from uuid import uuid4
+
+import pytest
+
+from actions import ContinueAction, JumpToRuleset
+from actions.action_executor import ActionExecutor
+
+from arguments import ArgumentStore
+
+from conditions import (
+    Condition,
+    ConditionEvaluator,
+    ConditionGroup,
+    ConditionGroupEvaluator,
+    GroupOperator,
+    MatchMode,
+    Operator,
+    RightSourceType,
+    SourceType,
+)
+
+from conditions.comparators import ComparatorFactory
+
+from configuration.models.action_config import ActionConfig
+from configuration.models.condition_config import ConditionConfig
+from configuration.models.condition_group_config import ConditionGroupConfig
+from configuration.models.firewall_config import FirewallConfiguration
+from configuration.models.operation_config import OperationConfig
+from configuration.models.rule_config import RuleConfig
+from configuration.models.ruleset_config import RulesetConfig
+
+from configuration.serializers.action_serializer import ActionSerializer
+from configuration.serializers.condition_serializer import ConditionSerializer
+from configuration.serializers.firewall_configuration_deserializer import (
+    FirewallConfigurationDeserializer,
+)
+from configuration.serializers.firewall_configuration_serializer import (
+    FirewallConfigurationSerializer,
+)
+from configuration.serializers.operation_serializer import OperationSerializer
+from configuration.serializers.ruleset_serializer import RulesetSerializer
+
+from drafts.draft_repository import DraftRepository
+from drafts.draft_service import DraftService
+
+from engine.context import ExecutionContext
+
+from operations.manipulation.arithmetic import (
+    ArithmeticOperator,
+    execute as arithmetic_execute,
+)
+from operations.manipulation.concatenate import execute as concatenate_execute
+from operations.manipulation.convert_integer import execute as convert_integer
+from operations.manipulation.convert_string import execute as convert_string
+from operations.manipulation.regex_replace import match as regex_match
+from operations.manipulation.regex_replace import replace as regex_replace
+
+from operations.parameter.set_parameter import SetParameterOperation
+
+from parameters import Parameter, ParameterScope, ParameterStore
+
+from rules.operation_definition import Operation
+from rules.operation_executor import OperationExecutor
+from rules.rule import Rule
+from rules.evaluator import RuleEvaluator
+
+from rulesets.argument_binding import ArgumentBinding
+from rulesets.executor import RulesetExecutor
+from rulesets.registry import RulesetRegistry
+from rulesets.ruleset import Ruleset
+from rulesets.argument import Argument, DataType, CollectionType
+
+from configuration.services.rule_service import RuleService
+from configuration.services.ruleset_service import RulesetService
+
+
+# ============================================================
+# Helpers / test doubles
+# ============================================================
+
+
+class FakeVersion:
+
+    def __init__(self, configuration):
+        self.id = uuid4()
+        self.configuration = configuration
+
+
+class FakeVersionService:
+
+    def __init__(self):
+        self.versions = {}
+
+    def add_version(self, version):
+        self.versions[version.id] = version
+
+    def get_version(self, version_id):
+        return self.versions.get(version_id)
+
+    def create_version(self, configuration):
+        version = FakeVersion(configuration)
+        self.versions[version.id] = version
+        return version
+
+
+class RuntimeRuleset:
+
+    """
+    Small runtime ruleset implementation matching what
+    RulesetExecutor expects.
+    """
+
+    def __init__(
+        self,
+        name,
+        rules,
+        arguments=None,
+    ):
+        self.name = name
+        self.rules = rules
+        self.arguments = arguments or {}
+
+    def validate(self):
+        for rule in self.rules:
+            rule.validate()
+
+        return True
+
+    def validate_arguments(self, arguments):
+        arguments = arguments or {}
+
+        for name, definition in self.arguments.items():
+
+            if name not in arguments:
+
+                if definition.default_value is not None:
+                    arguments[name] = definition.default_value
+                    continue
+
+                raise ValueError(
+                    f"Missing argument: {name}"
+                )
+
+        return arguments
+
+
+def make_condition_group(*conditions, operator=GroupOperator.AND):
+
+    return ConditionGroup(
+        operator,
+        list(conditions),
+    )
+
+
+def make_runtime_rule(
+    condition_group,
+    action=None,
+    operations=None,
+    name="rule",
+):
+
+    rule = Rule(name)
+
+    rule.set_condition_group(
+        condition_group
+    )
+
+    for operation in operations or []:
+        rule.add_operation(operation)
+
+    rule.set_action(
+        action or ContinueAction()
+    )
+
+    return rule
+
+
+def make_context():
+
+    return ExecutionContext()
+
+
+# ============================================================
+# ExecutionContext
+# ============================================================
+
+
+class TestExecutionContext:
+
+    def test_set_and_get_parameter(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "username",
+            "simran",
+        )
+
+        parameter = context.get_parameter(
+            "username"
+        )
+
+        assert parameter is not None
+        assert parameter.value == "simran"
+
+    def test_set_and_get_argument(self):
+
+        context = make_context()
+
+        context.set_argument(
+            "user_id",
+            123,
+        )
+
+        assert context.get_argument(
+            "user_id"
+        ) == 123
+
+    def test_ruleset_path(self):
+
+        context = make_context()
+
+        context.enter_ruleset("A")
+        context.enter_ruleset("B")
+
+        assert context.get_ruleset_path() == [
+            "A",
+            "B",
+        ]
+
+        assert context.exit_ruleset() == "B"
+        assert context.get_ruleset_path() == ["A"]
+
+        assert context.exit_ruleset() == "A"
+        assert context.get_ruleset_path() == []
+
+    def test_exit_empty_ruleset_path(self):
+
+        context = make_context()
+
+        assert context.exit_ruleset() is None
+
+
+# ============================================================
+# ParameterStore
+# ============================================================
+
+
+class TestParameterStore:
+
+    def test_store_and_retrieve_parameter(self):
+
+        store = ParameterStore()
+
+        parameter = Parameter(
+            name="x",
+            value=10,
+            datatype="Integer",
+        )
+
+        store.set(parameter)
+
+        assert store.get("x") == 10
+        assert store.get_parameter("x") == parameter
+        assert store.exists("x")
+
+    def test_remove_parameter(self):
+
+        store = ParameterStore()
+
+        store.set(
+            Parameter(
+                name="x",
+                value=10,
+                datatype="Integer",
+            )
+        )
+
+        store.remove("x")
+
+        assert not store.exists("x")
+        assert store.get("x") is None
+
+    def test_higher_scope_cannot_be_overwritten_by_lower_scope(self):
+
+        store = ParameterStore()
+
+        store.set(
+            Parameter(
+                name="x",
+                value="system",
+                datatype="String",
+                scope=ParameterScope.SYSTEM,
+            )
+        )
+
+        with pytest.raises(ValueError):
+            store.set(
+                Parameter(
+                    name="x",
+                    value="local",
+                    datatype="String",
+                    scope=ParameterScope.LOCAL,
+                )
+            )
+
+    def test_higher_scope_can_replace_lower_scope(self):
+
+        store = ParameterStore()
+
+        store.set(
+            Parameter(
+                name="x",
+                value="local",
+                datatype="String",
+                scope=ParameterScope.LOCAL,
+            )
+        )
+
+        store.set(
+            Parameter(
+                name="x",
+                value="global",
+                datatype="String",
+                scope=ParameterScope.GLOBAL,
+            )
+        )
+
+        assert store.get("x") == "global"
+
+
+# ============================================================
+# ArgumentStore
+# ============================================================
+
+
+class TestArgumentStore:
+
+    def test_argument_store(self):
+
+        store = ArgumentStore()
+
+        store.set("x", 123)
+
+        assert store.get("x") == 123
+        assert store.exists("x")
+        assert store.all()["x"] == 123
+
+
+# ============================================================
+# ArgumentBinding
+# ============================================================
+
+
+class TestArgumentBinding:
+
+    def test_parameter_binding_is_valid(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=SourceType.PARAMETER,
+            source_name="current_user",
+        )
+
+        assert binding.validate() is True
+
+    def test_user_value_binding_is_valid(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=RightSourceType.USER_VALUE,
+            value="simran",
+        )
+
+        assert binding.validate() is True
+
+    def test_parameter_binding_requires_source_name(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=SourceType.PARAMETER,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Parameter source requires source_name",
+        ):
+            binding.validate()
+
+    def test_parameter_binding_cannot_have_value(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=SourceType.PARAMETER,
+            source_name="user",
+            value="simran",
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Parameter source cannot have value",
+        ):
+            binding.validate()
+
+    def test_user_value_requires_value(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=RightSourceType.USER_VALUE,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="User value source requires value",
+        ):
+            binding.validate()
+
+    def test_user_value_cannot_have_source_name(self):
+
+        binding = ArgumentBinding(
+            argument_name="username",
+            source_type=RightSourceType.USER_VALUE,
+            source_name="user",
+            value="simran",
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="User value source cannot have source_name",
+        ):
+            binding.validate()
+
+
+# ============================================================
+# ActionExecutor
+# ============================================================
+
+
+class TestActionExecutor:
+
+    def test_build_continue_action(self):
+
+        config = ActionConfig(
+            type="CONTINUE"
+        )
+
+        action = ActionExecutor().build(config)
+
+        assert isinstance(
+            action,
+            ContinueAction,
+        )
+
+    def test_build_jump_action(self):
+
+        config = ActionConfig(
+            type="JUMP",
+            parameters={
+                "ruleset_name": "Child",
+            },
+        )
+
+        action = ActionExecutor().build(config)
+
+        assert isinstance(
+            action,
+            JumpToRuleset,
+        )
+
+        assert action.ruleset_name == "Child"
+        assert action.argument_bindings == []
+
+    def test_build_jump_with_parameter_binding(self):
+
+        config = ActionConfig(
+            type="JUMP",
+            parameters={
+                "ruleset_name": "Child",
+                "argument_bindings": [
+                    {
+                        "argument_name": "username",
+                        "source_type": "Parameter",
+                        "source_name": "current_user",
+                    }
+                ],
+            },
+        )
+
+        action = ActionExecutor().build(config)
+
+        assert len(
+            action.argument_bindings
+        ) == 1
+
+        binding = action.argument_bindings[0]
+
+        assert binding.argument_name == "username"
+        assert binding.source_type == SourceType.PARAMETER
+
+    def test_build_jump_requires_ruleset_name(self):
+
+        config = ActionConfig(
+            type="JUMP",
+            parameters={},
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="JUMP action requires 'ruleset_name'",
+        ):
+            ActionExecutor().build(config)
+
+    def test_unsupported_action(self):
+
+        config = ActionConfig(
+            type="UNKNOWN"
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Unsupported action type",
+        ):
+            ActionExecutor().build(config)
+
+
+# ============================================================
+# Condition comparators
+# ============================================================
+
+
+class TestComparators:
+
+    def test_string_equals(self):
+
+        comparator = ComparatorFactory.get("String")
+
+        assert comparator.compare(
+            "hello",
+            "hello",
+            Operator.EQUALS,
+        )
+
+    def test_string_contains(self):
+
+        comparator = ComparatorFactory.get("String")
+
+        assert comparator.compare(
+            "hello world",
+            "world",
+            Operator.CONTAINS,
+        )
+
+    def test_string_regex(self):
+
+        comparator = ComparatorFactory.get("String")
+
+        assert comparator.compare(
+            "abc123",
+            r"abc\d+",
+            Operator.REGEX_MATCH,
+        )
+
+    def test_integer_comparison(self):
+
+        comparator = ComparatorFactory.get("Integer")
+
+        assert comparator.compare(
+            10,
+            5,
+            Operator.GREATER_THAN,
+        )
+
+        assert comparator.compare(
+            10,
+            10,
+            Operator.GREATER_THAN_EQUALS,
+        )
+
+        assert comparator.compare(
+            5,
+            10,
+            Operator.LESS_THAN,
+        )
+
+    def test_boolean_comparison(self):
+
+        comparator = ComparatorFactory.get("Boolean")
+
+        assert comparator.compare(
+            True,
+            "true",
+            Operator.EQUALS,
+        )
+
+        assert comparator.compare(
+            "false",
+            False,
+            Operator.EQUALS,
+        )
+
+    def test_ipv4_comparison(self):
+
+        comparator = ComparatorFactory.get("IPv4")
+
+        assert comparator.compare(
+            "192.168.1.1",
+            "192.168.1.1",
+            Operator.EQUALS,
+        )
+
+        assert comparator.compare(
+            "192.168.1.1",
+            "192.168.1.2",
+            Operator.NOT_EQUALS,
+        )
+
+
+# ============================================================
+# ConditionResolver / ConditionEvaluator
+# ============================================================
+
+
+class TestConditions:
+
+    def test_parameter_equals_user_value(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "username",
+            "simran",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="username",
+            operator=Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="simran",
+        )
+
+        evaluator = ConditionEvaluator()
+
+        assert evaluator.evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_parameter_not_equals(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "username",
+            "simran",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="username",
+            operator=Operator.NOT_EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="bob",
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_argument_condition(self):
+
+        context = make_context()
+
+        arguments = {
+            "age": 25,
+        }
+
+        condition = Condition(
+            left_type=SourceType.ARGUMENT,
+            left_name="age",
+            operator=Operator.GREATER_THAN,
+            right_type=RightSourceType.USER_VALUE,
+            right_value=18,
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+            arguments,
+        ) is True
+
+    def test_right_side_parameter(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "expected",
+            "approved",
+        )
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="status",
+            operator=Operator.EQUALS,
+            right_type=RightSourceType.PARAMETER,
+            right_value="expected",
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_exists(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "username",
+            "simran",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="username",
+            operator=Operator.EXISTS,
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_does_not_exist(self):
+
+        context = make_context()
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="missing",
+            operator=Operator.DOES_NOT_EXIST,
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_missing_left_value_returns_false(self):
+
+        context = make_context()
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="missing",
+            operator=Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="x",
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is False
+
+    def test_list_any(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "roles",
+            ["user", "admin", "guest"],
+            datatype="String",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="roles",
+            operator=Operator.EQUALS,
+            match_mode=MatchMode.ANY,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="admin",
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_list_all(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "numbers",
+            [10, 20, 30],
+            datatype="Integer",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="numbers",
+            operator=Operator.GREATER_THAN,
+            match_mode=MatchMode.ALL,
+            right_type=RightSourceType.USER_VALUE,
+            right_value=5,
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+    def test_list_none(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "roles",
+            ["user", "guest"],
+            datatype="String",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="roles",
+            operator=Operator.EQUALS,
+            match_mode=MatchMode.NONE,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="admin",
+        )
+
+        assert ConditionEvaluator().evaluate(
+            condition,
+            context,
+        ) is True
+
+
+# ============================================================
+# ConditionGroup
+# ============================================================
+
+
+class TestConditionGroups:
+
+    def test_and_group(self):
+
+        context = make_context()
+
+        context.set_parameter("x", 10)
+        context.set_parameter("y", 20)
+
+        evaluator = ConditionGroupEvaluator(
+            ConditionEvaluator()
+        )
+
+        group = ConditionGroup(
+            GroupOperator.AND,
+            [
+                Condition(
+                    SourceType.PARAMETER,
+                    "x",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value=10,
+                ),
+                Condition(
+                    SourceType.PARAMETER,
+                    "y",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value=20,
+                ),
+            ],
+        )
+
+        assert evaluator.evaluate(
+            group,
+            context,
+        ) is True
+
+    def test_and_group_fails_if_one_condition_fails(self):
+
+        context = make_context()
+
+        context.set_parameter("x", 10)
+        context.set_parameter("y", 20)
+
+        evaluator = ConditionGroupEvaluator(
+            ConditionEvaluator()
+        )
+
+        group = ConditionGroup(
+            GroupOperator.AND,
+            [
+                Condition(
+                    SourceType.PARAMETER,
+                    "x",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value=10,
+                ),
+                Condition(
+                    SourceType.PARAMETER,
+                    "y",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value=999,
+                ),
+            ],
+        )
+
+        assert evaluator.evaluate(
+            group,
+            context,
+        ) is False
+
+    def test_or_group(self):
+
+        context = make_context()
+
+        context.set_parameter("status", "pending")
+
+        evaluator = ConditionGroupEvaluator(
+            ConditionEvaluator()
+        )
+
+        group = ConditionGroup(
+            GroupOperator.OR,
+            [
+                Condition(
+                    SourceType.PARAMETER,
+                    "status",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value="approved",
+                ),
+                Condition(
+                    SourceType.PARAMETER,
+                    "status",
+                    Operator.EQUALS,
+                    right_type=RightSourceType.USER_VALUE,
+                    right_value="pending",
+                ),
+            ],
+        )
+
+        assert evaluator.evaluate(
+            group,
+            context,
+        ) is True
+
+    def test_empty_group_rejected(self):
+
+        with pytest.raises(
+            ValueError,
+            match="at least one condition",
+        ):
+            ConditionGroup(
+                GroupOperator.AND,
+                [],
+            )
+
+
+# ============================================================
+# Operations
+# ============================================================
+
+
+class TestOperations:
+
+    def test_arithmetic_add(self):
+
+        result = arithmetic_execute(
+
+            [
+                10,
+                5
+            ],
+
+            ArithmeticOperator.ADD,
+
+        )
+
+        assert result["success"] is True
+        assert result["operation"] == "Arithmetic"
+        assert result["result"] == 15
+
+
+    def test_arithmetic_subtract(self):
+
+        result = arithmetic_execute(
+
+            [
+                10,
+                5
+            ],
+
+            ArithmeticOperator.SUBTRACT,
+
+        )
+
+        assert result["success"] is True
+        assert result["operation"] == "Arithmetic"
+        assert result["result"] == 5
+
+
+    def test_arithmetic_multiply(self):
+
+        result = arithmetic_execute(
+
+            [
+                10,
+                5
+            ],
+
+            ArithmeticOperator.MULTIPLY,
+
+        )
+
+        assert result["success"] is True
+        assert result["operation"] == "Arithmetic"
+        assert result["result"] == 50
+
+
+    def test_arithmetic_divide(self):
+
+        result = arithmetic_execute(
+
+            [
+                10,
+                5
+            ],
+
+            ArithmeticOperator.DIVIDE,
+
+        )
+
+        assert result["success"] is True
+        assert result["operation"] == "Arithmetic"
+        assert result["result"] == 2
+
+
+    def test_division_by_zero(self):
+
+        with pytest.raises(
+            ValueError,
+            match="Division by zero",
+        ):
+
+            arithmetic_execute(
+
+                [
+                    10,
+                    0
+                ],
+
+                ArithmeticOperator.DIVIDE,
+
+            )
+    def test_arithmetic_add_multiple_operands(self):
+
+        result = arithmetic_execute(
+
+            [
+                10,
+                20,
+                30,
+                40
+            ],
+
+            ArithmeticOperator.ADD,
+
+        )
+
+        assert result["result"] == 100
+
+
+    def test_arithmetic_subtract_multiple_operands(self):
+
+        result = arithmetic_execute(
+
+            [
+                100,
+                20,
+                10,
+                5
+            ],
+
+            ArithmeticOperator.SUBTRACT,
+
+        )
+
+        assert result["result"] == 65
+
+
+    def test_arithmetic_multiply_multiple_operands(self):
+
+        result = arithmetic_execute(
+
+            [
+                2,
+                3,
+                4,
+                5
+            ],
+
+            ArithmeticOperator.MULTIPLY,
+
+        )
+
+        assert result["result"] == 120
+
+
+    def test_arithmetic_divide_multiple_operands(self):
+
+        result = arithmetic_execute(
+
+            [
+                100,
+                2,
+                5
+            ],
+
+            ArithmeticOperator.DIVIDE,
+
+        )
+
+        assert result["result"] == 10
+
+    def test_concatenate(self):
+
+        result = concatenate_execute(
+            ["hello", "world"],
+            " ",
+        )
+
+        assert result["result"] == "hello world"
+
+    def test_convert_integer(self):
+
+        result = convert_integer("123")
+
+        assert result["result"] == 123
+
+    def test_convert_string(self):
+
+        result = convert_string(123)
+
+        assert result["result"] == "123"
+
+    def test_regex_match(self):
+
+        result = regex_match(
+            "hello123",
+            r"hello\d+",
+        )
+
+        assert result["result"] is True
+
+    def test_regex_replace(self):
+
+        result = regex_replace(
+            "hello123",
+            r"\d+",
+            "456",
+        )
+
+        assert result["result"] == "hello456"
+
+
+# ============================================================
+# SetParameterOperation
+# ============================================================
+
+
+class TestSetParameterOperation:
+
+    def test_set_parameter(self):
+
+        context = make_context()
+
+        operation = SetParameterOperation()
+
+        result = operation.execute(
+            context,
+            {
+                "name": "username",
+                "value": "simran",
+            },
+        )
+
+        assert result is True
+        assert context.get_parameter(
+            "username"
+        ).value == "simran"
+
+    def test_missing_name(self):
+
+        context = make_context()
+
+        with pytest.raises(
+            ValueError,
+            match="requires 'name'",
+        ):
+            SetParameterOperation().execute(
+                context,
+                {
+                    "value": "x",
+                },
+            )
+
+    def test_missing_value(self):
+
+        context = make_context()
+
+        with pytest.raises(
+            ValueError,
+            match="requires 'value'",
+        ):
+            SetParameterOperation().execute(
+                context,
+                {
+                    "name": "x",
+                },
+            )
+
+    def test_invalid_scope(self):
+
+        context = make_context()
+
+        with pytest.raises(
+            ValueError,
+            match="Invalid parameter scope",
+        ):
+            SetParameterOperation().execute(
+                context,
+                {
+                    "name": "x",
+                    "value": "y",
+                    "scope": "Invalid",
+                },
+            )
+
+
+# ============================================================
+# Rule / RuleEvaluator
+# ============================================================
+
+
+class TestRuleEvaluator:
+
+    def test_rule_does_not_execute_when_condition_fails(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "status",
+            "denied",
+        )
+
+        condition = Condition(
+            SourceType.PARAMETER,
+            "status",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        rule = make_runtime_rule(
+            make_condition_group(condition),
+            ContinueAction(),
+        )
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        assert evaluator.evaluate(
+            rule,
+            context,
+        ) is None
+
+    def test_rule_returns_continue_action(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        condition = Condition(
+            SourceType.PARAMETER,
+            "status",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        rule = make_runtime_rule(
+            make_condition_group(condition),
+            ContinueAction(),
+        )
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        result = evaluator.evaluate(
+            rule,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+    def test_rule_operation_executes_before_action(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        condition = Condition(
+            SourceType.PARAMETER,
+            "status",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        operation = Operation(
+            name="set-parameter",
+            parameters={
+                "name": "result",
+                "value": "success",
+            },
+        )
+
+        rule = make_runtime_rule(
+            make_condition_group(condition),
+            ContinueAction(),
+            operations=[operation],
+        )
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        evaluator.evaluate(
+            rule,
+            context,
+        )
+
+        assert context.get_parameter(
+            "result"
+        ).value == "success"
+
+
+# ============================================================
+# RulesetRegistry
+# ============================================================
+
+
+class TestRulesetRegistry:
+
+    def test_register_and_get(self):
+
+        registry = RulesetRegistry()
+
+        ruleset = RuntimeRuleset(
+            "Main",
+            [],
+        )
+
+        registry.register(ruleset)
+
+        assert registry.exists("Main")
+        assert registry.get("Main") is ruleset
+
+    def test_duplicate_ruleset_rejected(self):
+
+        registry = RulesetRegistry()
+
+        registry.register(
+            RuntimeRuleset("Main", [])
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="already exists",
+        ):
+            registry.register(
+                RuntimeRuleset("Main", [])
+            )
+
+    def test_missing_ruleset_rejected(self):
+
+        registry = RulesetRegistry()
+
+        with pytest.raises(
+            ValueError,
+            match="Ruleset not found",
+        ):
+            registry.get("Missing")
+
+
+# ============================================================
+# RulesetExecutor
+# ============================================================
+
+
+class TestRulesetExecutor:
+
+    def build_executor(self, registry):
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        return RulesetExecutor(
+            evaluator,
+            registry,
+        )
+
+    def test_continue_moves_to_next_rule(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        condition = Condition(
+            SourceType.PARAMETER,
+            "status",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        rule1 = make_runtime_rule(
+            make_condition_group(condition),
+            ContinueAction(),
+            name="first",
+        )
+
+        rule2 = make_runtime_rule(
+            make_condition_group(condition),
+            ContinueAction(),
+            name="second",
+        )
+
+        ruleset = RuntimeRuleset(
+            "Main",
+            [rule1, rule2],
+        )
+
+        registry = RulesetRegistry()
+        registry.register(ruleset)
+
+        executor = self.build_executor(
+            registry
+        )
+
+        result = executor.execute(
+            ruleset,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+    def test_jump_to_child_ruleset(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        parent_condition = Condition(
+            SourceType.PARAMETER,
+            "status",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        child_condition = Condition(
+            SourceType.ARGUMENT,
+            "username",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="simran",
+        )
+
+        child_rule = make_runtime_rule(
+            make_condition_group(
+                child_condition
+            ),
+            ContinueAction(),
+        )
+
+        child = RuntimeRuleset(
+            "Child",
+            [child_rule],
+            arguments={
+                "username": type(
+                    "ArgumentDefinition",
+                    (),
+                    {
+                        "default_value": None,
+                    },
+                )(),
+            },
+        )
+
+        parent_rule = make_runtime_rule(
+            make_condition_group(
+                parent_condition
+            ),
+            JumpToRuleset(
+                "Child",
+                [
+                    ArgumentBinding(
+                        argument_name="username",
+                        source_type=RightSourceType.USER_VALUE,
+                        value="simran",
+                    )
+                ],
+            ),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [parent_rule],
+        )
+
+        registry = RulesetRegistry()
+
+        registry.register(parent)
+        registry.register(child)
+
+        executor = self.build_executor(
+            registry
+        )
+
+        result = executor.execute(
+            parent,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+        assert context.get_ruleset_path() == []
+
+    def test_jump_argument_from_parameter(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "username",
+            "simran",
+        )
+
+        child_condition = Condition(
+            SourceType.ARGUMENT,
+            "username",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="simran",
+        )
+
+        child_rule = make_runtime_rule(
+            make_condition_group(
+                child_condition
+            ),
+            ContinueAction(),
+        )
+
+        child = RuntimeRuleset(
+            "Child",
+            [child_rule],
+        )
+
+        parent_rule = make_runtime_rule(
+            ConditionGroup(
+                GroupOperator.AND,
+                [
+                    Condition(
+                        SourceType.PARAMETER,
+                        "username",
+                        Operator.EXISTS,
+                    )
+                ],
+            ),
+            JumpToRuleset(
+                "Child",
+                [
+                    ArgumentBinding(
+                        argument_name="username",
+                        source_type=SourceType.PARAMETER,
+                        source_name="username",
+                    )
+                ],
+            ),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [parent_rule],
+        )
+
+        registry = RulesetRegistry()
+        registry.register(parent)
+        registry.register(child)
+
+        result = self.build_executor(
+            registry
+        ).execute(
+            parent,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+    def test_missing_jump_target(self):
+
+        context = make_context()
+
+        context.set_parameter(
+            "x",
+            "anything",
+        )
+        condition = Condition(
+            SourceType.PARAMETER,
+            "x",
+            Operator.EXISTS,
+
+
+        )
+
+        rule = make_runtime_rule(
+            make_condition_group(condition),
+            JumpToRuleset("Missing"),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [rule],
+        )
+
+        registry = RulesetRegistry()
+        registry.register(parent)
+
+        with pytest.raises(
+            ValueError,
+            match="Ruleset not found",
+        ):
+            self.build_executor(
+                registry
+            ).execute(
+                parent,
+                context,
+            )
+
+    def test_maximum_jump_depth(self):
+
+        context = make_context()
+
+        condition = Condition(
+            SourceType.PARAMETER,
+            "x",
+            Operator.EXISTS,
+        )
+
+        rule = make_runtime_rule(
+            make_condition_group(condition),
+            JumpToRuleset("Loop"),
+        )
+
+        ruleset = RuntimeRuleset(
+            "Loop",
+            [rule],
+        )
+
+        registry = RulesetRegistry()
+        registry.register(ruleset)
+
+        context.set_parameter(
+            "x",
+            True,
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Maximum ruleset jump depth exceeded",
+        ):
+            self.build_executor(
+                registry
+            ).execute(
+                ruleset,
+                context,
+            )
+
+
+# ============================================================
+# Configuration models
+# ============================================================
+
+
+class TestConfigurationModels:
+
+    def test_add_and_remove_rules(self):
+
+        ruleset = RulesetConfig(
+            name="Main"
+        )
+
+        rule1 = RuleConfig(
+            name="Rule 1"
+        )
+
+        rule2 = RuleConfig(
+            name="Rule 2"
+        )
+
+        ruleset.add_rule(rule1)
+        ruleset.add_rule(rule2)
+
+        assert rule1.order == 1
+        assert rule2.order == 2
+
+        ruleset.remove_rule(
+            rule1.id
+        )
+
+        assert len(
+            ruleset.rules
+        ) == 1
+
+        assert ruleset.rules[0].order == 1
+
+    def test_firewall_configuration(self):
+
+        configuration = FirewallConfiguration()
+
+        ruleset = RulesetConfig(
+            name="Main"
+        )
+
+        configuration.add_ruleset(
+            ruleset
+        )
+
+        assert configuration.get_ruleset(
+            ruleset.id
+        ) is ruleset
+
+        configuration.remove_ruleset(
+            ruleset.id
+        )
+
+        assert configuration.get_ruleset(
+            ruleset.id
+        ) is None
+
+
+# ============================================================
+# Serializers
+# ============================================================
+
+
+class TestSerializers:
+
+    def test_condition_round_trip(self):
+
+        serializer = ConditionSerializer()
+
+        condition = ConditionConfig(
+            left_type="Parameter",
+            left_name="status",
+            operator="Equals",
+            match_mode="Any",
+            right_type="User_Value",
+            right_value="approved",
+        )
+
+        data = serializer.serialize(
+            condition
+        )
+
+        restored = serializer.deserialize(
+            data
+        )
+
+        assert restored.id == condition.id
+        assert restored.left_type == condition.left_type
+        assert restored.left_name == condition.left_name
+        assert restored.operator == condition.operator
+        assert restored.right_type == condition.right_type
+        assert restored.right_value == condition.right_value
+
+    def test_condition_group_round_trip(self):
+
+        serializer = ConditionSerializer()
+
+        group = ConditionGroupConfig(
+            operator="AND"
+        )
+
+        group.add_condition(
+            ConditionConfig(
+                left_type="Parameter",
+                left_name="status",
+                operator="Equals",
+                right_type="User_Value",
+                right_value="approved",
+            )
+        )
+
+        data = serializer.serialize_group(
+            group
+        )
+
+        restored = serializer.deserialize_group(
+            data
+        )
+
+        assert restored.id == group.id
+        assert restored.operator == "AND"
+        assert len(restored.conditions) == 1
+
+    def test_operation_round_trip(self):
+
+        serializer = OperationSerializer()
+
+        operation = OperationConfig(
+            name="set-parameter",
+            parameters={
+                "name": "status",
+                "value": "approved",
+            },
+        )
+
+        data = serializer.serialize(
+            operation
+        )
+
+        restored = serializer.deserialize(
+            data
+        )
+
+        assert restored.id == operation.id
+        assert restored.name == operation.name
+        assert restored.parameters == operation.parameters
+
+    def test_action_round_trip(self):
+
+        serializer = ActionSerializer()
+
+        action = ActionConfig(
+            type="JUMP",
+            parameters={
+                "ruleset_name": "Child",
+                "argument_bindings": [
+                    ArgumentBinding(
+                        argument_name="username",
+                        source_type=RightSourceType.USER_VALUE,
+                        value="simran",
+                    )
+                ],
+            },
+        )
+
+        data = serializer.serialize(
+            action
+        )
+
+        restored = serializer.deserialize(
+            data
+        )
+
+        assert restored.id == action.id
+        assert restored.type == "JUMP"
+
+        binding = restored.parameters[
+            "argument_bindings"
+        ][0]
+
+        assert isinstance(
+            binding,
+            ArgumentBinding,
+        )
+
+        assert binding.argument_name == "username"
+        assert binding.value == "simran"
+
+    def test_ruleset_round_trip(self):
+
+        ruleset = RulesetConfig(
+            name="Main"
+        )
+
+        rule = RuleConfig(
+            name="Check status"
+        )
+
+        rule.condition_group = ConditionGroupConfig(
+            operator="AND"
+        )
+
+        rule.condition_group.add_condition(
+            ConditionConfig(
+                left_type="Parameter",
+                left_name="status",
+                operator="Equals",
+                right_type="User_Value",
+                right_value="approved",
+            )
+        )
+
+        rule.operations.append(
+            OperationConfig(
+                name="set-parameter",
+                parameters={
+                    "name": "result",
+                    "value": "success",
+                },
+            )
+        )
+
+        rule.action = ActionConfig(
+            type="CONTINUE"
+        )
+
+        ruleset.add_rule(
+            rule
+        )
+
+        serializer = RulesetSerializer()
+
+        data = serializer.export(
+            ruleset
+        )
+
+        restored = serializer.import_ruleset(
+            data
+        )
+
+        assert restored.id == ruleset.id
+        assert restored.name == ruleset.name
+        assert len(restored.rules) == 1
+
+        restored_rule = restored.rules[0]
+
+        assert restored_rule.id == rule.id
+        assert restored_rule.name == rule.name
+        assert restored_rule.order == 1
+        assert restored_rule.action.type == "CONTINUE"
+
+        assert len(
+            restored_rule.operations
+        ) == 1
+
+        assert (
+            restored_rule.operations[0].name
+            == "set-parameter"
+        )
+
+    def test_full_configuration_round_trip(self):
+
+        configuration = FirewallConfiguration()
+
+        ruleset = RulesetConfig(
+            name="Main"
+        )
+
+        rule = RuleConfig(
+            name="Rule 1"
+        )
+
+        rule.condition_group = ConditionGroupConfig(
+            operator="AND"
+        )
+
+        rule.condition_group.add_condition(
+            ConditionConfig(
+                left_type="Parameter",
+                left_name="status",
+                operator="Equals",
+                right_type="User_Value",
+                right_value="approved",
+            )
+        )
+
+        rule.operations.append(
+            OperationConfig(
+                name="set-parameter",
+                parameters={
+                    "name": "result",
+                    "value": "success",
+                },
+            )
+        )
+
+        rule.action = ActionConfig(
+            type="CONTINUE"
+        )
+
+        ruleset.add_rule(rule)
+        configuration.add_ruleset(ruleset)
+
+        serializer = FirewallConfigurationSerializer()
+        deserializer = FirewallConfigurationDeserializer()
+
+        data = serializer.export(
+            configuration
+        )
+
+        restored = deserializer.deserialize(
+            data
+        )
+
+        assert len(
+            restored.rulesets
+        ) == 1
+
+        restored_ruleset = restored.rulesets[0]
+
+        assert restored_ruleset.id == ruleset.id
+        assert restored_ruleset.name == "Main"
+
+        assert len(
+            restored_ruleset.rules
+        ) == 1
+
+        restored_rule = restored_ruleset.rules[0]
+
+        assert restored_rule.id == rule.id
+        assert restored_rule.name == "Rule 1"
+        assert restored_rule.order == 1
+
+        assert (
+            restored_rule.condition_group.operator
+            == "AND"
+        )
+
+        assert len(
+            restored_rule.condition_group.conditions
+        ) == 1
+
+        assert len(
+            restored_rule.operations
+        ) == 1
+
+        assert (
+            restored_rule.operations[0].parameters[
+                "value"
+            ]
+            == "success"
+        )
+
+        assert (
+            restored_rule.action.type
+            == "CONTINUE"
+        )
+
+
+# ============================================================
+# Draft lifecycle
+# ============================================================
+
+
+class TestDraftLifecycle:
+
+    def setup_services(self):
+
+        repository = DraftRepository()
+
+        version_service = FakeVersionService()
+
+        initial_configuration = FirewallConfiguration()
+
+        version = FakeVersion(
+            initial_configuration
+        )
+
+        version_service.add_version(
+            version
+        )
+
+        service = DraftService(
+            repository,
+            version_service,
+        )
+
+        return (
+            service,
+            repository,
+            version_service,
+            version,
+        )
+
+    def test_create_draft(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        configuration = FirewallConfiguration()
+
+        draft = service.create_draft(
+            version.id,
+            configuration,
+        )
+
+        assert draft.base_version_id == version.id
+        assert repository.get(
+            draft.id
+        ) is draft
+
+    def test_draft_configuration_is_deep_copy(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        configuration = FirewallConfiguration()
+
+        ruleset = RulesetConfig(
+            name="Main"
+        )
+
+        configuration.add_ruleset(
+            ruleset
+        )
+
+        draft = service.create_draft(
+            version.id,
+            configuration,
+        )
+
+        configuration.rulesets[0].name = "Changed"
+
+        assert (
+            draft.configuration.rulesets[0].name
+            == "Main"
+        )
+
+    def test_update_configuration(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        draft = service.create_draft(
+            version.id,
+            FirewallConfiguration(),
+        )
+
+        new_configuration = FirewallConfiguration()
+
+        new_configuration.add_ruleset(
+            RulesetConfig(
+                name="Updated"
+            )
+        )
+
+        updated = service.update_configuration(
+            draft.id,
+            new_configuration,
+        )
+
+        assert (
+            updated.configuration.rulesets[0].name
+            == "Updated"
+        )
+
+    def test_clear_changes(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        draft = service.create_draft(
+            version.id,
+            FirewallConfiguration(),
+        )
+
+        assert service.clear_changes(
+            draft.id
+        ) is True
+
+        assert repository.get(
+            draft.id
+        ) is None
+
+    def test_commit_creates_version(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        configuration = FirewallConfiguration()
+
+        configuration.add_ruleset(
+            RulesetConfig(
+                name="Committed"
+            )
+        )
+
+        draft = service.create_draft(
+            version.id,
+            configuration,
+        )
+
+        committed_version = service.commit(
+            draft.id
+        )
+
+        assert committed_version is not None
+
+        assert (
+            committed_version.configuration.rulesets[0].name
+            == "Committed"
+        )
+
+        assert repository.get(
+            draft.id
+        ) is None
+
+    def test_create_draft_requires_existing_version(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        with pytest.raises(
+            ValueError,
+            match="Version not found",
+        ):
+            service.create_draft(
+                uuid4(),
+                FirewallConfiguration(),
+            )
+
+    def test_missing_draft_rejected(self):
+
+        (
+            service,
+            repository,
+            version_service,
+            version,
+        ) = self.setup_services()
+
+        with pytest.raises(
+            ValueError,
+            match="Draft not found",
+        ):
+            service.commit(
+                uuid4()
+            )
+
+
+# ============================================================
+# Complete end-to-end flow
+# ============================================================
+
+
+class TestEndToEnd:
+
+    def test_parameter_condition_operation_and_action_flow(self):
+
+        context = ExecutionContext()
+
+        context.set_parameter(
+            "status",
+            "approved",
+        )
+
+        condition = Condition(
+            left_type=SourceType.PARAMETER,
+            left_name="status",
+            operator=Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="approved",
+        )
+
+        operation = Operation(
+            name="set-parameter",
+            parameters={
+                "name": "decision",
+                "value": "allow",
+            },
+        )
+
+        rule = make_runtime_rule(
+            condition_group=ConditionGroup(
+                GroupOperator.AND,
+                [condition],
+            ),
+            operations=[operation],
+            action=ContinueAction(),
+        )
+
+        ruleset = RuntimeRuleset(
+            "Main",
+            [rule],
+        )
+
+        registry = RulesetRegistry()
+        registry.register(
+            ruleset
+        )
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        executor = RulesetExecutor(
+            evaluator,
+            registry,
+        )
+
+        result = executor.execute(
+            ruleset,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+        assert context.get_parameter(
+            "decision"
+        ).value == "allow"
+
+        assert context.get_ruleset_path() == []
+
+# ============================================================
+# Ruleset Argument Edge Cases
+# ============================================================
+
+
+class TestRulesetArgumentEdgeCases:
+
+    def build_executor(self, registry):
+
+        evaluator = RuleEvaluator(
+            ConditionGroupEvaluator(
+                ConditionEvaluator()
+            ),
+            OperationExecutor(),
+        )
+
+        return RulesetExecutor(
+            evaluator,
+            registry,
+        )
+
+    def test_missing_required_argument(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing argument: username",
+        ):
+            ruleset.validate_arguments()
+
+    def test_unknown_argument_rejected(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Unknown argument: password",
+        ):
+            ruleset.validate_arguments({
+                "password": "secret",
+            })
+
+    def test_default_argument_is_used(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="guest",
+            )
+        )
+
+        result = ruleset.validate_arguments()
+
+        assert result == {
+            "username": "guest",
+        }
+
+    def test_explicit_argument_overrides_default(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="guest",
+            )
+        )
+
+        result = ruleset.validate_arguments({
+            "username": "simran",
+        })
+
+        assert result == {
+            "username": "simran",
+        }
+
+    def test_string_argument_rejects_integer(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument username expects String",
+        ):
+            ruleset.validate_arguments({
+                "username": 123,
+            })
+
+    def test_integer_argument_rejects_string(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="count",
+                datatype=DataType.INTEGER,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument count expects Integer",
+        ):
+            ruleset.validate_arguments({
+                "count": "10",
+            })
+
+    def test_integer_argument_rejects_boolean(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="count",
+                datatype=DataType.INTEGER,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument count expects Integer",
+        ):
+            ruleset.validate_arguments({
+                "count": True,
+            })
+
+    def test_boolean_argument_rejects_string(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="enabled",
+                datatype=DataType.BOOLEAN,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument enabled expects Boolean",
+        ):
+            ruleset.validate_arguments({
+                "enabled": "true",
+            })
+
+    def test_collection_argument_accepts_list(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="roles",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SET,
+            )
+        )
+
+        result = ruleset.validate_arguments({
+            "roles": [
+                "admin",
+                "user",
+            ],
+        })
+
+        assert result == {
+            "roles": [
+                "admin",
+                "user",
+            ],
+        }
+
+    def test_collection_argument_rejects_scalar(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="roles",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SET,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument roles expects collection value",
+        ):
+            ruleset.validate_arguments({
+                "roles": "admin",
+            })
+
+    def test_collection_argument_validates_each_item(self):
+
+        ruleset = Ruleset("Test")
+
+        ruleset.add_argument(
+            Argument(
+                name="numbers",
+                datatype=DataType.INTEGER,
+                collection_type=CollectionType.SET,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Argument numbers expects Integer",
+        ):
+            ruleset.validate_arguments({
+                "numbers": [
+                    1,
+                    2,
+                    "three",
+                ],
+            })
+
+    def test_child_arguments_are_isolated_from_parent(self):
+
+        parent = Ruleset("Parent")
+
+        parent.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        child = Ruleset("Child")
+
+        child.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        parent_arguments = parent.validate_arguments({
+            "username": "parent-user",
+        })
+
+        child_arguments = child.validate_arguments({
+            "username": "child-user",
+        })
+
+        assert parent_arguments == {
+            "username": "parent-user",
+        }
+
+        assert child_arguments == {
+            "username": "child-user",
+        }
+
+        assert parent_arguments != child_arguments
+
+    def test_child_arguments_do_not_modify_parent_arguments(self):
+
+        parent = Ruleset("Parent")
+
+        parent.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        child = Ruleset("Child")
+
+        child.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        parent_arguments = parent.validate_arguments({
+            "username": "parent-user",
+        })
+
+        child_arguments = child.validate_arguments({
+            "username": "child-user",
+        })
+
+        child_arguments["username"] = "changed-child-user"
+
+        assert parent_arguments == {
+            "username": "parent-user",
+        }
+
+        assert child_arguments == {
+            "username": "changed-child-user",
+        }
+
+    def test_child_missing_required_argument_rejected(self):
+
+        child = Ruleset("Child")
+
+        child.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing argument: username",
+        ):
+            child.validate_arguments({})
+
+    def test_child_default_argument_used_during_jump(self):
+
+        child = Ruleset("Child")
+
+        child.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="guest",
+            )
+        )
+
+        assert child.validate_arguments({}) == {
+            "username": "guest",
+        }
+
+    def test_child_explicit_argument_overrides_default(self):
+
+        child = Ruleset("Child")
+
+        child.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="guest",
+            )
+        )
+
+        arguments = child.validate_arguments({
+            "username": "alice",
+        })
+
+        assert arguments == {
+            "username": "alice",
+        }
+
+    def test_jump_explicit_argument_reaches_child(self):
+
+        context = make_context()
+
+        child_condition = Condition(
+            SourceType.ARGUMENT,
+            "username",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="alice",
+        )
+
+        child_rule = make_runtime_rule(
+            make_condition_group(
+                child_condition
+            ),
+            ContinueAction(),
+        )
+
+        child = RuntimeRuleset(
+            "Child",
+            [child_rule],
+        )
+
+        parent_rule = make_runtime_rule(
+            ConditionGroup(
+                GroupOperator.AND,
+                [
+                    Condition(
+                        SourceType.PARAMETER,
+                        "run_child",
+                        Operator.EXISTS,
+                    )
+                ],
+            ),
+            JumpToRuleset(
+                "Child",
+                [
+                    ArgumentBinding(
+                        argument_name="username",
+                        source_type=RightSourceType.USER_VALUE,
+                        value="alice",
+                    )
+                ],
+            ),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [parent_rule],
+        )
+
+        registry = RulesetRegistry()
+
+        registry.register(parent)
+        registry.register(child)
+
+        context.set_parameter(
+            "run_child",
+            True,
+        )
+
+        result = self.build_executor(
+            registry
+        ).execute(
+            parent,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+        assert context.get_ruleset_path() == []
+    def test_ruleset_without_arguments_accepts_none(self):
+
+        ruleset = Ruleset("Main")
+
+        assert ruleset.validate_arguments() == {}
+
+
+    def test_ruleset_without_arguments_accepts_empty_dict(self):
+
+        ruleset = Ruleset("Main")
+
+        assert ruleset.validate_arguments({}) == {}
+
+
+    def test_ruleset_without_arguments_rejects_arguments(self):
+
+        ruleset = Ruleset("Main")
+
+        with pytest.raises(
+            ValueError,
+            match="Ruleset Main does not accept arguments",
+        ):
+            ruleset.validate_arguments({
+                "username": "simran",
+            })
+
+
+    def test_ruleset_with_required_argument_requires_argument(self):
+
+        ruleset = Ruleset("Child")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing argument: username",
+        ):
+            ruleset.validate_arguments()
+
+
+    def test_ruleset_with_default_argument_can_omit_argument(self):
+
+        ruleset = Ruleset("Child")
+
+        ruleset.add_argument(
+            Argument(
+                name="username",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="guest",
+            )
+        )
+
+        assert ruleset.validate_arguments() == {
+            "username": "guest",
+        }
+    def test_jump_to_child_without_required_argument_fails(self):
+
+        context = make_context()
+
+        child = RuntimeRuleset(
+            "Child",
+            [],
+            arguments={
+                "username": type(
+                    "ArgumentDefinition",
+                    (),
+                    {
+                        "default_value": None,
+                    },
+                )(),
+            },
+        )
+
+        parent_rule = make_runtime_rule(
+            ConditionGroup(
+                GroupOperator.AND,
+                [
+                    Condition(
+                        SourceType.PARAMETER,
+                        "run_child",
+                        Operator.EXISTS,
+                    )
+                ],
+            ),
+            JumpToRuleset("Child"),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [parent_rule],
+        )
+
+        registry = RulesetRegistry()
+
+        registry.register(parent)
+        registry.register(child)
+
+        context.set_parameter(
+            "run_child",
+            True,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing argument: username",
+        ):
+            self.build_executor(
+                registry
+            ).execute(
+                parent,
+                context,
+            )
+
+    def test_jump_to_child_uses_default_argument(self):
+
+        context = make_context()
+
+        child_condition = Condition(
+            SourceType.ARGUMENT,
+            "username",
+            Operator.EQUALS,
+            right_type=RightSourceType.USER_VALUE,
+            right_value="guest",
+        )
+
+        child_rule = make_runtime_rule(
+            make_condition_group(
+                child_condition
+            ),
+            ContinueAction(),
+        )
+
+        child = RuntimeRuleset(
+            "Child",
+            [child_rule],
+            arguments={
+                "username": type(
+                    "ArgumentDefinition",
+                    (),
+                    {
+                        "default_value": "guest",
+                    },
+                )(),
+            },
+        )
+
+        parent_rule = make_runtime_rule(
+            ConditionGroup(
+                GroupOperator.AND,
+                [
+                    Condition(
+                        SourceType.PARAMETER,
+                        "run_child",
+                        Operator.EXISTS,
+                    )
+                ],
+            ),
+            JumpToRuleset("Child"),
+        )
+
+        parent = RuntimeRuleset(
+            "Parent",
+            [parent_rule],
+        )
+
+        registry = RulesetRegistry()
+
+        registry.register(parent)
+        registry.register(child)
+
+        context.set_parameter(
+            "run_child",
+            True,
+        )
+
+        result = self.build_executor(
+            registry
+        ).execute(
+            parent,
+            context,
+        )
+
+        assert isinstance(
+            result,
+            ContinueAction,
+        )
+
+        assert context.get_ruleset_path() == []
+    def test_ruleset_arguments_round_trip(self):
+
+        ruleset = RulesetConfig(
+            name="Security_Profile"
+        )
+
+        ruleset.add_argument(
+            Argument(
+                name="profile",
+                datatype=DataType.STRING,
+                collection_type=CollectionType.SCALAR,
+                default_value="standard",
+            )
+        )
+
+        serializer = RulesetSerializer()
+
+        exported = serializer.export(
+            ruleset
+        )
+
+        imported = serializer.import_ruleset(
+            exported
+        )
+
+        assert imported.name == "Security_Profile"
+
+        assert len(
+            imported.arguments
+        ) == 1
+
+        argument = imported.arguments[0]
+
+        assert argument.name == "profile"
+
+        assert argument.datatype == DataType.STRING
+
+        assert argument.collection_type == CollectionType.SCALAR
+
+        assert argument.default_value == "standard"
+
+# ============================================================
+# Rule operations
+# ============================================================
+
+
+class TestRuleOperations:
+
+    def setup_services(self):
+
+        repository = DraftRepository()
+
+        version_service = FakeVersionService()
+
+        initial_configuration = FirewallConfiguration()
+
+        version = FakeVersion(
+            initial_configuration
+        )
+
+        version_service.add_version(
+            version
+        )
+
+        draft_service = DraftService(
+            repository,
+            version_service
+        )
+
+        draft = draft_service.create_draft(
+            version.id,
+            initial_configuration
+        )
+
+        ruleset_service = RulesetService(
+            draft_service
+        )
+
+        ruleset = ruleset_service.create_ruleset(
+            draft.id,
+            "Main"
+        )
+
+        rule = ruleset_service.add_rule(
+            draft.id,
+            ruleset.id,
+            "Process Request"
+        )
+
+        rule_service = RuleService(
+            draft_service
+        )
+
+        return (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        )
+
+
+    def test_create_operation(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        operation = rule_service.create_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            "set-parameter",
+
+            {
+                "name": "risk",
+                "value": 10,
+                "scope": "REQUEST"
+            }
+
+        )
+
+        assert isinstance(
+            operation,
+            OperationConfig
+        )
+
+        assert operation.name == "set-parameter"
+
+        assert operation.parameters == {
+            "name": "risk",
+            "value": 10,
+            "scope": "REQUEST"
+        }
+
+        assert len(
+            rule.operations
+        ) == 1
+
+        assert rule.operations[0] == operation
+
+
+    def test_created_operation_has_id(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        operation = rule_service.create_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            "set-parameter"
+
+        )
+
+        assert operation.id is not None
+
+
+    def test_create_operation_without_parameters_uses_empty_dict(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        operation = rule_service.create_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            "set-parameter"
+
+        )
+
+        assert operation.parameters == {}
+
+
+    def test_create_operation_requires_name(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        with pytest.raises(
+            ValueError,
+            match="Operation name is required"
+        ):
+
+            rule_service.create_operation(
+
+                draft.id,
+
+                ruleset.id,
+
+                rule.id,
+
+                ""
+
+            )
+
+
+    def test_create_operation_requires_existing_rule(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        with pytest.raises(
+            ValueError,
+            match="Rule not found"
+        ):
+
+            rule_service.create_operation(
+
+                draft.id,
+
+                ruleset.id,
+
+                "00000000-0000-0000-0000-000000000000",
+
+                "set-parameter"
+
+            )
+
+
+    def test_multiple_operations_preserve_order(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        first = rule_service.create_operation(
+
+            draft.id,
+            ruleset.id,
+            rule.id,
+            "set-parameter",
+            {
+                "name": "first",
+                "value": 1
+            }
+
+        )
+
+        second = rule_service.create_operation(
+
+            draft.id,
+            ruleset.id,
+            rule.id,
+            "set-parameter",
+            {
+                "name": "second",
+                "value": 2
+            }
+
+        )
+
+        assert len(
+            rule.operations
+        ) == 2
+
+        assert rule.operations[0].id == first.id
+
+        assert rule.operations[1].id == second.id
+
+
+    def test_get_operation(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        operation = rule_service.create_operation(
+
+            draft.id,
+            ruleset.id,
+            rule.id,
+            "set-parameter",
+            {
+                "name": "risk",
+                "value": 10
+            }
+
+        )
+
+        restored = rule_service.get_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            operation.id
+
+        )
+
+        assert restored is operation
+
+
+    def test_get_missing_operation_returns_none(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        result = rule_service.get_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            "00000000-0000-0000-0000-000000000000"
+
+        )
+
+        assert result is None
+
+
+    def test_remove_operation(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        operation = rule_service.create_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            "set-parameter",
+
+            {
+                "name": "risk",
+                "value": 10
+            }
+
+        )
+
+        removed = rule_service.remove_operation(
+
+            draft.id,
+
+            ruleset.id,
+
+            rule.id,
+
+            0
+
+        )
+
+        assert removed is operation
+
+        assert rule.operations == []
+
+
+    def test_remove_operation_invalid_index_fails(self):
+
+        (
+            draft_service,
+            rule_service,
+            draft,
+            ruleset,
+            rule
+        ) = self.setup_services()
+
+        with pytest.raises(
+            IndexError,
+            match="Operation index out of range"
+        ):
+
+            rule_service.remove_operation(
+
+                draft.id,
+
+                ruleset.id,
+
+                rule.id,
+
+                0
+
+            )
+
+# FILE: C:\Users\simran\Desktop\Coding projects\Firewall-Project\tests\test_version.py
+
+import json
+
+from pathlib import Path
+from uuid import UUID
+
+import pytest
+
+from versions.version import Version
+from versions.version_repository import VersionRepository
+from versions.version_service import VersionService
+
+from configuration.models.firewall_config import (
+    FirewallConfiguration
+)
+
+from configuration.models.ruleset_config import (
+    RulesetConfig
+)
+
+from storage.json_storage import JsonStorage
+
+
+class TestVersion:
+
+    def test_version_has_default_id(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="Test Version"
+        )
+
+        assert version.id is not None
+        assert isinstance(
+            version.id,
+            UUID
+        )
+
+
+    def test_version_has_created_at(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="Test Version"
+        )
+
+        assert version.created_at is not None
+
+
+    def test_version_defaults_to_available(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="Test Version"
+        )
+
+        assert version.status == "AVAILABLE"
+
+
+    def test_version_stores_name(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="My Version"
+        )
+
+        assert version.name == "My Version"
+
+
+    def test_version_stores_description(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="My Version",
+            description="Test description"
+        )
+
+        assert version.description == "Test description"
+
+
+    def test_version_description_can_be_none(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="My Version"
+        )
+
+        assert version.description is None
+
+
+    def test_version_parent_is_optional(self):
+
+        configuration = FirewallConfiguration()
+
+        version = Version(
+            number=1,
+            configuration=configuration,
+            name="My Version"
+        )
+
+        assert version.parent_version_id is None
+
+
+class TestVersionRepository:
+
+    def setup_method(self):
+
+        self.repository = VersionRepository()
+
+
+    def build_version(
+        self,
+        number=1,
+        name="Test Version"
+    ):
+
+        return Version(
+            number=number,
+            configuration=FirewallConfiguration(),
+            name=name
+        )
+
+
+    def test_save_and_get_version(self):
+
+        version = self.build_version()
+
+        self.repository.save(
+            version
+        )
+
+        result = self.repository.get(
+            version.id
+        )
+
+        assert result is version
+
+
+    def test_get_version_by_string_id(self):
+
+        version = self.build_version()
+
+        self.repository.save(
+            version
+        )
+
+        result = self.repository.get(
+            str(version.id)
+        )
+
+        assert result is version
+
+
+    def test_get_missing_version_returns_none(self):
+
+        result = self.repository.get(
+            UUID(
+                "00000000-0000-0000-0000-000000000000"
+            )
+        )
+
+        assert result is None
+
+
+    def test_list_versions(self):
+
+        first = self.build_version(
+            number=1
+        )
+
+        second = self.build_version(
+            number=2
+        )
+
+        self.repository.save(
+            first
+        )
+
+        self.repository.save(
+            second
+        )
+
+        versions = self.repository.list()
+
+        assert len(versions) == 2
+        assert versions[0] is first
+        assert versions[1] is second
+
+
+    def test_clear_versions(self):
+
+        version = self.build_version()
+
+        self.repository.save(
+            version
+        )
+
+        self.repository.clear()
+
+        assert self.repository.list() == []
+
+
+class TestVersionService:
+
+    def setup_method(self):
+
+        self.repository = VersionRepository()
+
+        self.storage = JsonStorage(
+            folder="storage/test_versions"
+        )
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        self.service = VersionService(
+            repository=self.repository,
+            storage=self.storage
+        )
+
+
+    def teardown_method(self):
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        folder = Path(
+            "storage/test_versions"
+        )
+
+        if folder.exists():
+
+            try:
+                folder.rmdir()
+
+            except OSError:
+                pass
+
+
+    def build_service(self):
+
+        return self.service
+
+
+    def build_configuration(
+        self,
+        ruleset_name="Security"
+    ):
+
+        configuration = FirewallConfiguration()
+
+        configuration.add_ruleset(
+            RulesetConfig(
+                name=ruleset_name
+            )
+        )
+
+        return configuration
+
+
+    def test_create_version(self):
+
+        service = self.build_service()
+
+        version = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        assert version.number == 1
+        assert version.name == "Initial"
+        assert version.status == "AVAILABLE"
+
+
+    def test_first_version_is_number_one(self):
+
+        service = self.build_service()
+
+        version = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        assert version.number == 1
+
+
+    def test_second_version_increments_number(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated Configuration"
+        )
+
+        assert first.number == 1
+        assert second.number == 2
+
+
+    def test_version_name_is_required(self):
+
+        service = self.build_service()
+
+        with pytest.raises(
+            ValueError,
+            match="Version name is required"
+        ):
+
+            service.create_version(
+                self.build_configuration(),
+                name=""
+            )
+
+
+    def test_description_is_optional(self):
+
+        service = self.build_service()
+
+        version = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        assert version.description is None
+
+
+    def test_create_version_copies_configuration(self):
+
+        service = self.build_service()
+
+        configuration = self.build_configuration()
+
+        version = service.create_version(
+            configuration,
+            name="Initial"
+        )
+
+        assert version.configuration is not configuration
+
+
+    def test_create_version_deep_copies_configuration(self):
+
+        service = self.build_service()
+
+        configuration = self.build_configuration()
+
+        version = service.create_version(
+            configuration,
+            name="Initial"
+        )
+
+        original_ruleset = (
+            configuration.rulesets[0]
+        )
+
+        version_ruleset = (
+            version.configuration.rulesets[0]
+        )
+
+        assert version_ruleset is not original_ruleset
+
+
+    def test_creating_new_version_does_not_modify_previous_version(self):
+
+        service = self.build_service()
+
+        configuration = self.build_configuration()
+
+        first = service.create_version(
+            configuration,
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        assert first.number == 1
+        assert second.number == 2
+
+        assert (
+            first.configuration.rulesets[0].name
+            == "Security"
+        )
+
+
+    def test_create_new_version_from_previous_configuration(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version_from_version(
+            first.id,
+            name="Updated"
+        )
+
+        assert second.number == 2
+
+        assert (
+            second.configuration
+            == first.configuration
+        )
+
+
+    def test_create_version_from_previous_version_sets_parent(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Base Version"
+        )
+
+        second = service.create_version_from_version(
+            first.id,
+            name="Web Traffic Update"
+        )
+
+        assert second.parent_version_id == first.id
+
+
+    def test_version_parent_chain(self):
+
+        service = self.build_service()
+
+        version1 = service.create_version(
+            self.build_configuration(),
+            name="Base Version"
+        )
+
+        version2 = service.create_version_from_version(
+            version1.id,
+            name="Web Traffic Update"
+        )
+
+        version3 = service.create_version_from_version(
+            version2.id,
+            name="Security Update"
+        )
+
+        version4 = service.create_version_from_version(
+            version3.id,
+            name="Final Configuration"
+        )
+
+        assert version1.parent_version_id is None
+
+        assert (
+            version2.parent_version_id
+            == version1.id
+        )
+
+        assert (
+            version3.parent_version_id
+            == version2.id
+        )
+
+        assert (
+            version4.parent_version_id
+            == version3.id
+        )
+
+
+    def test_list_versions(self):
+
+        service = self.build_service()
+
+        service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        versions = service.list_versions()
+
+        assert len(versions) == 2
+
+        assert versions[0].number == 1
+        assert versions[1].number == 2
+
+
+    def test_get_version(self):
+
+        service = self.build_service()
+
+        version = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        result = service.get_version(
+            version.id
+        )
+
+        assert result is not None
+        assert result.id == version.id
+
+
+    def test_switch_version_makes_version_working(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        service.switch_version(
+            first.id
+        )
+
+        assert first.status == "WORKING"
+        assert second.status == "AVAILABLE"
+
+
+    def test_switch_version_can_change_working_version(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        service.switch_version(
+            first.id
+        )
+
+        service.switch_version(
+            second.id
+        )
+
+        assert first.status == "AVAILABLE"
+        assert second.status == "WORKING"
+
+
+    def test_switch_missing_version_fails(self):
+
+        service = self.build_service()
+
+        with pytest.raises(
+            ValueError,
+            match="Version not found"
+        ):
+
+            service.switch_version(
+                UUID(
+                    "00000000-0000-0000-0000-000000000000"
+                )
+            )
+
+
+    def test_push_version(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        service.push_version(
+            first.id
+        )
+
+        assert first.status == "ACTIVE"
+
+
+    def test_push_missing_version_fails(self):
+
+        service = self.build_service()
+
+        with pytest.raises(
+            ValueError,
+            match="Version not found"
+        ):
+
+            service.push_version(
+                UUID(
+                    "00000000-0000-0000-0000-000000000000"
+                )
+            )
+
+
+    def test_push_last_known_good_version(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        service.push_version(
+            first.id
+        )
+
+        assert first.status == "ACTIVE"
+
+        service.push_version(
+            second.id
+        )
+
+        assert first.status == "AVAILABLE"
+        assert second.status == "ACTIVE"
+
+
+    def test_switch_does_not_delete_old_versions(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        service.switch_version(
+            first.id
+        )
+
+        service.switch_version(
+            second.id
+        )
+
+        versions = service.list_versions()
+
+        assert len(versions) == 2
+
+
+    def test_push_does_not_delete_old_versions(self):
+
+        service = self.build_service()
+
+        first = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        second = service.create_version(
+            self.build_configuration("Updated"),
+            name="Updated"
+        )
+
+        service.push_version(
+            second.id
+        )
+
+        versions = service.list_versions()
+
+        assert len(versions) == 2
+
+
+    def test_export_version(self):
+
+        service = self.build_service()
+
+        version = service.create_version(
+            self.build_configuration(),
+            name="Initial"
+        )
+
+        result = service.export_version(
+            version.id
+        )
+
+        assert result is not None
+
+
+    def test_export_missing_version_fails(self):
+
+        service = self.build_service()
+
+        with pytest.raises(
+            ValueError,
+            match="Version not found"
+        ):
+
+            service.export_version(
+                UUID(
+                    "00000000-0000-0000-0000-000000000000"
+                )
+            )
+
+
+class TestVersionImmutability:
+
+    def setup_method(self):
+
+        self.repository = VersionRepository()
+
+        self.storage = JsonStorage(
+            folder="storage/test_versions"
+        )
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        self.service = VersionService(
+            repository=self.repository,
+            storage=self.storage
+        )
+
+
+    def teardown_method(self):
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        folder = Path(
+            "storage/test_versions"
+        )
+
+        if folder.exists():
+
+            try:
+                folder.rmdir()
+
+            except OSError:
+                pass
+
+
+    def test_creating_new_version_preserves_old_version(self):
+
+        configuration = FirewallConfiguration()
+
+        first = self.service.create_version(
+            configuration,
+            name="Version One"
+        )
+
+        second = self.service.create_version(
+            configuration,
+            name="Version Two"
+        )
+
+        assert first.id != second.id
+        assert first.number == 1
+        assert second.number == 2
+
+
+    def test_versions_have_different_ids(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version One"
+        )
+
+        second = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version Two"
+        )
+
+        assert first.id != second.id
+
+
+    def test_version_numbers_are_never_reused(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version One"
+        )
+
+        second = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version Two"
+        )
+
+        assert first.number == 1
+        assert second.number == 2
+
+        self.service.repository.clear()
+
+        third = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version Three"
+        )
+
+        assert third.number == 1
+
+
+    def test_creating_version_does_not_change_previous_version_id(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version One"
+        )
+
+        original_id = first.id
+
+        self.service.create_version(
+            FirewallConfiguration(),
+            name="Version Two"
+        )
+
+        assert first.id == original_id
+
+
+class TestVersionPersistence:
+
+    def setup_method(self):
+
+        self.repository = VersionRepository()
+
+        self.storage = JsonStorage(
+            folder="storage/test_versions"
+        )
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        self.service = VersionService(
+            repository=self.repository,
+            storage=self.storage
+        )
+
+
+    def teardown_method(self):
+
+        for path in self.storage.list():
+
+            path.unlink()
+
+        folder = Path(
+            "storage/test_versions"
+        )
+
+        if folder.exists():
+
+            try:
+                folder.rmdir()
+
+            except OSError:
+                pass
+
+
+    def test_version_name_and_description_survive_reload(self):
+
+        version = self.service.create_version(
+            FirewallConfiguration(),
+            name="Base Version",
+            description="Initial configuration"
+        )
+
+        repository = VersionRepository()
+
+        reloaded_service = VersionService(
+            repository=repository,
+            storage=self.storage
+        )
+
+        loaded = reloaded_service.get_version(
+            version.id
+        )
+
+        assert loaded.name == "Base Version"
+
+        assert (
+            loaded.description
+            == "Initial configuration"
+        )
+
+
+    def test_versions_survive_reload(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version One"
+        )
+
+        second = self.service.create_version(
+            FirewallConfiguration(),
+            name="Version Two"
+        )
+
+        repository = VersionRepository()
+
+        reloaded_service = VersionService(
+            repository=repository,
+            storage=self.storage
+        )
+
+        versions = (
+            reloaded_service.list_versions()
+        )
+
+        assert len(versions) == 2
+
+        assert versions[0].id == first.id
+        assert versions[1].id == second.id
+
+
+    def test_version_configuration_survives_reload(self):
+
+        configuration = FirewallConfiguration()
+
+        configuration.add_ruleset(
+            RulesetConfig(
+                name="Security"
+            )
+        )
+
+        version = self.service.create_version(
+            configuration,
+            name="Base Version"
+        )
+
+        repository = VersionRepository()
+
+        reloaded_service = VersionService(
+            repository=repository,
+            storage=self.storage
+        )
+
+        loaded = reloaded_service.get_version(
+            version.id
+        )
+
+        assert len(
+            loaded.configuration.rulesets
+        ) == 1
+
+        assert (
+            loaded.configuration.rulesets[0].name
+            == "Security"
+        )
+
+
+    def test_version_parent_survives_reload(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Base Version"
+        )
+
+        second = (
+            self.service.create_version_from_version(
+                first.id,
+                name="Web Traffic Update"
+            )
+        )
+
+        repository = VersionRepository()
+
+        reloaded_service = VersionService(
+            repository=repository,
+            storage=self.storage
+        )
+
+        loaded_first = (
+            reloaded_service.get_version(
+                first.id
+            )
+        )
+
+        loaded_second = (
+            reloaded_service.get_version(
+                second.id
+            )
+        )
+
+        assert loaded_first.parent_version_id is None
+
+        assert (
+            loaded_second.parent_version_id
+            == loaded_first.id
+        )
+
+
+    def test_version_parent_chain_survives_reload(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Base Version"
+        )
+
+        second = (
+            self.service.create_version_from_version(
+                first.id,
+                name="Web Traffic Update"
+            )
+        )
+
+        third = (
+            self.service.create_version_from_version(
+                second.id,
+                name="Security Update"
+            )
+        )
+
+        repository = VersionRepository()
+
+        reloaded_service = VersionService(
+            repository=repository,
+            storage=self.storage
+        )
+
+        loaded_first = (
+            reloaded_service.get_version(
+                first.id
+            )
+        )
+
+        loaded_second = (
+            reloaded_service.get_version(
+                second.id
+            )
+        )
+
+        loaded_third = (
+            reloaded_service.get_version(
+                third.id
+            )
+        )
+
+        assert (
+            loaded_first.parent_version_id
+            is None
+        )
+
+        assert (
+            loaded_second.parent_version_id
+            == loaded_first.id
+        )
+
+        assert (
+            loaded_third.parent_version_id
+            == loaded_second.id
+        )
+
+
+    def test_parent_version_id_is_saved_to_json(self):
+
+        first = self.service.create_version(
+            FirewallConfiguration(),
+            name="Base Version"
+        )
+
+        second = (
+            self.service.create_version_from_version(
+                first.id,
+                name="Web Traffic Update"
+            )
+        )
+
+        data = self.storage.load(
+            f"version_{second.number}"
+        )
+
+        assert (
+            data["parent_version_id"]
+            == str(first.id)
+        )
+
+# FILE: C:\Users\simran\Desktop\Coding projects\Firewall-Project\tests\version_integration.py
+
+import shutil
+from pathlib import Path
+
+from configuration.models.firewall_config import (
+    FirewallConfiguration
+)
+
+from configuration.models.ruleset_config import (
+    RulesetConfig
+)
+
+from versions.version_repository import VersionRepository
+from versions.version_service import VersionService
+
+from configuration.models.firewall_config import FirewallConfiguration
+from configuration.models.ruleset_config import RulesetConfig
+from configuration.models.rule_config import RuleConfig
+
+from storage.json_storage import JsonStorage
+
+
+STORAGE_PATH = Path("storage/versions")
+
+
+def build_configuration(
+    ruleset_name="Security"
+):
+    configuration = FirewallConfiguration()
+
+    configuration.add_ruleset(
+        RulesetConfig(
+            name=ruleset_name
+        )
+    )
+
+    return configuration
+
+
+def build_service():
+    repository = VersionRepository()
+
+    storage = JsonStorage(
+        STORAGE_PATH
+    )
+
+    return VersionService(
+        repository=repository,
+        storage=storage
+    )
+
+
+class TestVersionRealStorage:
+
+    def setup_method(self):
+
+        STORAGE_PATH.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        for file in STORAGE_PATH.glob(
+            "version_*.json"
+        ):
+            file.unlink()
+
+
+    def teardown_method(self):
+
+        for file in STORAGE_PATH.glob(
+            "version_*.json"
+        ):
+            file.unlink()
+
+
+    def test_create_versions_from_previous_version(self):
+
+        service = build_service()
+
+        # -------------------------------------------------
+        # Version 1
+        # -------------------------------------------------
+
+        version_1 = service.create_version(
+            build_configuration(
+                "Original Rules"
+            ),
+            name="Version One",
+            description="Original configuration"
+        )
+
+        assert version_1.number == 1
+
+        assert (
+            version_1.configuration.rulesets[0].name
+            == "Original Rules"
+        )
+
+
+        # -------------------------------------------------
+        # Version 2
+        # -------------------------------------------------
+
+        version_1_configuration = (
+            version_1.configuration
+        )
+
+        version_2_configuration = (
+            __import__("copy").deepcopy(
+                version_1_configuration
+            )
+        )
+
+        version_2_configuration.rulesets[0].name = (
+            "Version Two Rules"
+        )
+
+        version_2 = service.create_version(
+            version_2_configuration,
+            name="Version Two",
+            description="Changes based on Version One"
+        )
+
+
+        assert version_2.number == 2
+
+        assert (
+            version_2.configuration.rulesets[0].name
+            == "Version Two Rules"
+        )
+
+
+        # -------------------------------------------------
+        # Version 1 must remain unchanged
+        # -------------------------------------------------
+
+        assert (
+            version_1.configuration.rulesets[0].name
+            == "Original Rules"
+        )
+
+
+        # -------------------------------------------------
+        # Both versions must exist
+        # -------------------------------------------------
+
+        versions = service.list_versions()
+
+        assert len(versions) == 2
+
+        assert versions[0].number == 1
+        assert versions[1].number == 2
+
+
+    def test_switch_back_to_old_version_and_create_new_version(
+        self
+    ):
+
+        service = build_service()
+
+
+        # -------------------------------------------------
+        # Version 1
+        # -------------------------------------------------
+
+        version_1 = service.create_version(
+            build_configuration(
+                "Original"
+            ),
+            name="Version One"
+        )
+
+
+        # -------------------------------------------------
+        # Version 2
+        # -------------------------------------------------
+
+        version_2_configuration = (
+            __import__("copy").deepcopy(
+                version_1.configuration
+            )
+        )
+
+        version_2_configuration.rulesets[0].name = (
+            "Version Two"
+        )
+
+        version_2 = service.create_version(
+            version_2_configuration,
+            name="Version Two"
+        )
+
+
+        # -------------------------------------------------
+        # Switch back to Version 1
+        # -------------------------------------------------
+
+        result = service.switch_version(
+            version_1.id
+        )
+
+        assert result is version_1
+
+        assert version_1.status == "WORKING"
+
+        assert version_2.status == "AVAILABLE"
+
+
+        # -------------------------------------------------
+        # Create Version 3 from Version 1
+        # -------------------------------------------------
+
+        version_3_configuration = (
+            __import__("copy").deepcopy(
+                version_1.configuration
+            )
+        )
+
+        version_3_configuration.rulesets[0].name = (
+            "Version Three"
+        )
+
+        version_3 = service.create_version(
+            version_3_configuration,
+            name="Version Three",
+            description="New branch from Version One"
+        )
+
+
+        # -------------------------------------------------
+        # Version numbers are never reused
+        # -------------------------------------------------
+
+        assert version_1.number == 1
+        assert version_2.number == 2
+        assert version_3.number == 3
+
+
+        # -------------------------------------------------
+        # Version 1 remains unchanged
+        # -------------------------------------------------
+
+        assert (
+            version_1.configuration.rulesets[0].name
+            == "Original"
+        )
+
+
+        # -------------------------------------------------
+        # Version 2 remains unchanged
+        # -------------------------------------------------
+
+        assert (
+            version_2.configuration.rulesets[0].name
+            == "Version Two"
+        )
+
+
+        # -------------------------------------------------
+        # Version 3 is based on Version 1
+        # -------------------------------------------------
+
+        assert (
+            version_3.configuration.rulesets[0].name
+            == "Version Three"
+        )
+
+
+        # -------------------------------------------------
+        # All three versions still exist
+        # -------------------------------------------------
+
+        versions = service.list_versions()
+
+        assert len(versions) == 3
+
+        assert [
+            version.number
+            for version in versions
+        ] == [1, 2, 3]
+
+
+    def test_versions_survive_service_reload(self):
+
+        service = build_service()
+
+
+        # -------------------------------------------------
+        # Create Version 1
+        # -------------------------------------------------
+
+        version_1 = service.create_version(
+            build_configuration(
+                "Production Rules"
+            ),
+            name="Production",
+            description="Production baseline"
+        )
+
+
+        # -------------------------------------------------
+        # Create Version 2
+        # -------------------------------------------------
+
+        version_2_configuration = (
+            __import__("copy").deepcopy(
+                version_1.configuration
+            )
+        )
+
+        version_2_configuration.rulesets[0].name = (
+            "Updated Production Rules"
+        )
+
+        version_2 = service.create_version(
+            version_2_configuration,
+            name="Updated Production"
+        )
+
+
+        # -------------------------------------------------
+        # Create a new service.
+        #
+        # This simulates restarting the application.
+        # -------------------------------------------------
+
+        reloaded_service = build_service()
+
+
+        # -------------------------------------------------
+        # Verify both versions were loaded
+        # -------------------------------------------------
+
+        versions = reloaded_service.list_versions()
+
+        assert len(versions) == 2
+
+
+        # -------------------------------------------------
+        # Verify Version 1
+        # -------------------------------------------------
+
+        reloaded_version_1 = (
+            reloaded_service.get_version(
+                version_1.id
+            )
+        )
+
+        assert reloaded_version_1 is not None
+
+        assert reloaded_version_1.number == 1
+
+        assert reloaded_version_1.name == (
+            "Production"
+        )
+
+        assert reloaded_version_1.description == (
+            "Production baseline"
+        )
+
+        assert (
+            reloaded_version_1
+            .configuration
+            .rulesets[0]
+            .name
+            == "Production Rules"
+        )
+
+
+        # -------------------------------------------------
+        # Verify Version 2
+        # -------------------------------------------------
+
+        reloaded_version_2 = (
+            reloaded_service.get_version(
+                version_2.id
+            )
+        )
+
+        assert reloaded_version_2 is not None
+
+        assert reloaded_version_2.number == 2
+
+        assert reloaded_version_2.name == (
+            "Updated Production"
+        )
+
+        assert (
+            reloaded_version_2
+            .configuration
+            .rulesets[0]
+            .name
+            == "Updated Production Rules"
+        )
+
+
+    def test_push_old_known_good_version(self):
+
+        service = build_service()
+
+
+        # -------------------------------------------------
+        # Version 1 - known good
+        # -------------------------------------------------
+
+        version_1 = service.create_version(
+            build_configuration(
+                "Known Good"
+            ),
+            name="Known Good"
+        )
+
+
+        # -------------------------------------------------
+        # Version 2 - broken
+        # -------------------------------------------------
+
+        version_2_configuration = (
+            __import__("copy").deepcopy(
+                version_1.configuration
+            )
+        )
+
+        version_2_configuration.rulesets[0].name = (
+            "Broken Configuration"
+        )
+
+        version_2 = service.create_version(
+            version_2_configuration,
+            name="Broken"
+        )
+
+
+        # -------------------------------------------------
+        # Push Version 1
+        # -------------------------------------------------
+
+        result = service.push_version(
+            version_1.id
+        )
+
+        assert result is version_1
+
+        assert version_1.status == "ACTIVE"
+
+        assert version_2.status == "AVAILABLE"
+
+
+        # -------------------------------------------------
+        # Version 2 must still exist
+        # -------------------------------------------------
+
+        assert (
+            service.get_version(
+                version_2.id
+            )
+            is version_2
+        )
+
+
+    def test_switch_does_not_delete_versions(self):
+
+        service = build_service()
+
+
+        version_1 = service.create_version(
+            build_configuration(
+                "Version One"
+            ),
+            name="Version One"
+        )
+
+        version_2 = service.create_version(
+            build_configuration(
+                "Version Two"
+            ),
+            name="Version Two"
+        )
+
+        version_3 = service.create_version(
+            build_configuration(
+                "Version Three"
+            ),
+            name="Version Three"
+        )
+
+
+        # Switch to Version 1
+
+        service.switch_version(
+            version_1.id
+        )
+
+
+        # All versions must still exist
+
+        assert (
+            service.get_version(
+                version_1.id
+            )
+            is version_1
+        )
+
+        assert (
+            service.get_version(
+                version_2.id
+            )
+            is version_2
+        )
+
+        assert (
+            service.get_version(
+                version_3.id
+            )
+            is version_3
+        )
+
+
+        assert len(
+            service.list_versions()
+        ) == 3
+    def test_full_version_branching_and_rollback(self):
+
+        repository = VersionRepository()
+
+        service = VersionService(
+            repository=repository
+        )
+
+        # --------------------------------------------------
+        # Version 1 - base configuration
+        # --------------------------------------------------
+
+        configuration = FirewallConfiguration()
+
+        configuration.add_ruleset(
+            RulesetConfig(
+                name="Base Security"
+            )
+        )
+
+        version1 = service.create_version(
+            configuration=configuration,
+            name="Base Version",
+            description="Initial firewall configuration"
+        )
+
+        assert version1.number == 1
+        assert version1.parent_version_id is None
+        assert len(
+            version1.configuration.rulesets
+        ) == 1
+
+        # --------------------------------------------------
+        # Version 2 - created from Version 1
+        # --------------------------------------------------
+
+        version2 = service.create_version_from_version(
+            version1.id,
+            name="Web Traffic Update",
+            description="Allow web traffic"
+        )
+
+        assert version2.number == 2
+        assert version2.parent_version_id == version1.id
+
+        # Version 2 starts with Version 1 configuration
+        assert len(
+            version2.configuration.rulesets
+        ) == 1
+
+        assert (
+            version2.configuration.rulesets[0].name
+            == "Base Security"
+        )
+
+        # --------------------------------------------------
+        # Modify Version 2
+        # --------------------------------------------------
+
+        ruleset2 = (
+            version2.configuration.rulesets[0]
+        )
+
+        ruleset2.add_rule(
+            RuleConfig(
+                name="Allow Web Traffic",
+                order=1
+            )
+        )
+
+        service._save_version(
+            version2
+        )
+
+        # Version 2 has the new rule
+        assert len(
+            version2.configuration.rulesets[0].rules
+        ) == 1
+
+        # Version 1 must remain unchanged
+        assert len(
+            version1.configuration.rulesets[0].rules
+        ) == 0
+
+        # --------------------------------------------------
+        # Version 3 - created from Version 2
+        # --------------------------------------------------
+
+        version3 = service.create_version_from_version(
+            version2.id,
+            name="Version 3",
+            description="Further web configuration"
+        )
+
+        assert version3.number == 3
+        assert version3.parent_version_id == version2.id
+
+        # Version 3 inherits Version 2's rule
+        assert len(
+            version3.configuration.rulesets[0].rules
+        ) == 1
+
+        assert (
+            version3.configuration.rulesets[0].rules[0].name
+            == "Allow Web Traffic"
+        )
+
+        # --------------------------------------------------
+        # Roll back to Version 1
+        # --------------------------------------------------
+
+        service.switch_version(
+            version1.id
+        )
+
+        assert version1.status == "WORKING"
+
+        assert version2.status == "AVAILABLE"
+        assert version3.status == "AVAILABLE"
+
+        # --------------------------------------------------
+        # Version 4 - new branch from Version 1
+        # --------------------------------------------------
+
+        version4 = service.create_version_from_version(
+            version1.id,
+            name="Version 4",
+            description="New configuration after rollback"
+        )
+
+        assert version4.number == 4
+
+        # Version 4 branches from Version 1
+        assert version4.parent_version_id == version1.id
+
+        # Version 4 inherits Version 1's configuration,
+        # NOT Version 2 or Version 3's configuration.
+        assert len(
+            version4.configuration.rulesets
+        ) == 1
+
+        assert len(
+            version4.configuration.rulesets[0].rules
+        ) == 0
+
+        # --------------------------------------------------
+        # All four versions must still exist
+        # --------------------------------------------------
+
+        versions = service.list_versions()
+
+        assert len(versions) == 4
+
+        assert [version.number for version in versions] == [
+            1,
+            2,
+            3,
+            4
+        ]
+
+        # --------------------------------------------------
+        # Verify parent relationships
+        # --------------------------------------------------
+
+        assert version1.parent_version_id is None
+
+        assert version2.parent_version_id == version1.id
+
+        assert version3.parent_version_id == version2.id
+
+        assert version4.parent_version_id == version1.id
+
+        # --------------------------------------------------
+        # Verify old configurations remain intact
+        # --------------------------------------------------
+
+        assert len(
+            version1.configuration.rulesets[0].rules
+        ) == 0
+
+        assert len(
+            version2.configuration.rulesets[0].rules
+        ) == 1
+
+        assert len(
+            version3.configuration.rulesets[0].rules
+        ) == 1
+
+        assert len(
+            version4.configuration.rulesets[0].rules
+        ) == 0

@@ -1,0 +1,5967 @@
+﻿
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\actions\action.py
+==================================================
+from abc import ABC, abstractmethod
+
+
+
+class Action(ABC):
+
+
+    type = None
+
+
+    @abstractmethod
+    def execute(
+        self,
+        context
+    ):
+
+        pass
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\actions\action_executor.py
+==================================================
+from actions import (
+    ContinueAction,
+    JumpToRuleset
+)
+
+from rulesets.argument_binding import ArgumentBinding
+
+from conditions.enums import (
+    SourceType,
+    RightSourceType
+)
+
+
+class ActionExecutor:
+
+    def build(
+        self,
+        action_config
+    ):
+
+        if action_config is None:
+
+            return None
+
+        action_type = action_config.type
+
+        parameters = (
+            action_config.parameters
+            or {}
+        )
+
+        if action_type == "CONTINUE":
+
+            return ContinueAction()
+
+        if action_type == "JUMP":
+
+            ruleset_name = parameters.get(
+                "ruleset_name"
+            )
+
+            if not ruleset_name:
+
+                raise ValueError(
+                    "JUMP action requires 'ruleset_name'"
+                )
+
+            argument_bindings = self.build_argument_bindings(
+                parameters.get(
+                    "argument_bindings",
+                    []
+                )
+            )
+
+            return JumpToRuleset(
+
+                ruleset_name=ruleset_name,
+
+                argument_bindings=argument_bindings
+
+            )
+
+        raise ValueError(
+            f"Unsupported action type: {action_type}"
+        )
+
+    def build_argument_bindings(
+        self,
+        bindings
+    ):
+
+        result = []
+
+        for binding in bindings:
+
+            if isinstance(
+                binding,
+                ArgumentBinding
+            ):
+
+                binding.validate()
+
+                result.append(
+                    binding
+                )
+
+                continue
+
+            if not isinstance(
+                binding,
+                dict
+            ):
+
+                raise ValueError(
+                    "Argument binding must be a dictionary"
+                )
+
+            source_type = binding.get(
+                "source_type"
+            )
+
+            if isinstance(
+                source_type,
+                str
+            ):
+
+                if source_type == "Parameter":
+
+                    source_type = SourceType.PARAMETER
+
+                elif source_type == "User_Value":
+
+                    source_type = RightSourceType.USER_VALUE
+
+                else:
+
+                    raise ValueError(
+                        f"Unsupported argument source type: {source_type}"
+                    )
+
+            argument_binding = ArgumentBinding(
+
+                argument_name=binding[
+                    "argument_name"
+                ],
+
+                source_type=source_type,
+
+                source_name=binding.get(
+                    "source_name"
+                ),
+
+                value=binding.get(
+                    "value"
+                )
+
+            )
+
+            argument_binding.validate()
+
+            result.append(
+                argument_binding
+            )
+
+        return result
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\actions\continue_action.py
+==================================================
+from .action import Action
+
+
+
+class ContinueAction(Action):
+
+
+    type = "CONTINUE"
+
+
+
+    def execute(
+        self,
+        context
+    ):
+
+        return self
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\actions\jump_action.py
+==================================================
+from .action import Action
+
+
+
+class JumpToRuleset(Action):
+
+
+    type = "JUMP"
+
+
+
+    def __init__(
+        self,
+        ruleset_name,
+        argument_bindings=None
+    ):
+
+        self.ruleset_name = ruleset_name
+
+        self.argument_bindings = argument_bindings or []
+
+
+
+    def execute(
+        self,
+        context
+    ):
+
+        return self
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\actions\__init__.py
+==================================================
+from .action import Action
+from .continue_action import ContinueAction
+from .jump_action import JumpToRuleset
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\arguments\store.py
+==================================================
+class ArgumentStore:
+
+
+    def __init__(self):
+
+        self.arguments = {}
+
+
+
+    def set(
+
+        self,
+
+        name,
+
+        value
+
+    ):
+
+        self.arguments[name] = value
+
+
+
+    def get(
+
+        self,
+
+        name
+
+    ):
+
+        return self.arguments.get(
+
+            name
+
+        )
+
+
+
+    def exists(
+
+        self,
+
+        name
+
+    ):
+
+        return name in self.arguments
+
+
+
+    def all(
+
+        self
+
+    ):
+
+        return self.arguments
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\arguments\__init__.py
+==================================================
+from .store import ArgumentStore
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\condition.py
+==================================================
+from dataclasses import dataclass
+
+from .enums import (
+    SourceType,
+    RightSourceType,
+    MatchMode,
+    Operator
+)
+
+
+
+@dataclass
+class Condition:
+
+
+    left_type: SourceType
+
+    left_name: str
+
+
+    operator: Operator
+
+
+    match_mode: MatchMode = MatchMode.ANY
+
+
+    right_type: RightSourceType = None
+
+    right_value: object = None
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\enums.py
+==================================================
+from enum import Enum
+
+
+class SourceType(Enum):
+
+    PARAMETER = "Parameter"
+
+    ARGUMENT = "Argument"
+
+
+
+class RightSourceType(Enum):
+
+    PARAMETER = "Parameter"
+
+    ARGUMENT = "Argument"
+
+    USER_VALUE = "User_Value"
+
+
+
+class MatchMode(Enum):
+
+    ANY = "Any"
+
+    ALL = "All"
+
+    NONE = "None"
+
+
+
+class Operator(Enum):
+
+    EXISTS = "Exists"
+
+    DOES_NOT_EXIST = "Does_Not_Exist"
+
+    EQUALS = "Equals"
+
+    NOT_EQUALS = "Not_Equals"
+
+    CONTAINS = "Contains"
+
+    NOT_CONTAINS = "Not_Contains"
+
+    STARTS_WITH = "Starts_With"
+
+    ENDS_WITH = "Ends_With"
+
+    REGEX_MATCH = "Regex_Match"
+
+    REGEX_NOT_MATCH = "Regex_Not_Match"
+
+    GREATER_THAN = "Greater_Than"
+
+    GREATER_THAN_EQUALS = "Greater_Than_Equals"
+
+    LESS_THAN = "Less_Than"
+
+    LESS_THAN_EQUALS = "Less_Than_Equals"
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\evaluator.py
+==================================================
+from .resolver import ConditionResolver
+
+from .comparators import ComparatorFactory
+
+from .enums import (
+    SourceType,
+    Operator
+)
+
+
+
+class ConditionEvaluator:
+
+
+    def __init__(
+
+        self
+
+    ):
+
+        self.resolver = ConditionResolver()
+
+
+
+    def evaluate(
+
+        self,
+
+        condition,
+
+        context,
+
+        arguments=None
+
+    ):
+
+
+        left = self.resolver.resolve_left(
+
+            condition,
+
+            context,
+
+            arguments
+
+        )
+
+
+        right = self.resolver.resolve_right(
+
+            condition,
+
+            context,
+
+            arguments
+
+        )
+
+
+        #
+        # Exists / Does Not Exist
+        #
+
+        if condition.operator == Operator.EXISTS:
+
+            return left is not None
+
+
+
+        if condition.operator == Operator.DOES_NOT_EXIST:
+
+            return left is None
+
+
+
+        if left is None:
+
+            return False
+
+
+
+        #
+        # Handle scalar and collections
+        #
+
+        values = (
+
+            left
+
+            if isinstance(left, list)
+
+            else [left]
+
+        )
+
+
+
+        #
+        # Determine datatype
+        #
+
+        datatype = "String"
+
+
+
+        if condition.left_type == SourceType.PARAMETER:
+
+
+            parameter = context.get_parameter(
+
+                condition.left_name
+
+            )
+
+
+            if parameter is not None:
+
+                datatype = parameter.datatype
+
+
+
+        elif condition.left_type == SourceType.ARGUMENT:
+
+
+            if arguments is not None:
+
+
+                value = arguments.get(
+
+                    condition.left_name
+
+                )
+
+
+                if isinstance(value, bool):
+
+                    datatype = "Boolean"
+
+
+                elif isinstance(value, int):
+
+                    datatype = "Integer"
+
+
+                elif isinstance(value, str):
+
+                    datatype = "String"
+
+
+
+        #
+        # Comparator
+        #
+
+        comparator = ComparatorFactory.get(
+
+            datatype
+
+        )
+
+
+
+        results = []
+
+
+        for value in values:
+
+
+            results.append(
+
+                comparator.compare(
+
+                    value,
+
+                    right,
+
+                    condition.operator
+
+                )
+
+            )
+
+
+
+        #
+        # Match mode
+        #
+
+        if condition.match_mode.value == "Any":
+
+            return any(results)
+
+
+
+        if condition.match_mode.value == "All":
+
+            return all(results)
+
+
+
+        if condition.match_mode.value == "None":
+
+            return not any(results)
+
+
+
+        return False
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\group.py
+==================================================
+from enum import Enum
+
+
+
+class GroupOperator(Enum):
+
+    AND = "AND"
+
+    OR = "OR"
+
+
+
+class ConditionGroup:
+
+
+    def __init__(
+
+        self,
+
+        operator,
+
+        conditions
+
+    ):
+
+
+        if not conditions:
+
+            raise ValueError(
+
+                "ConditionGroup requires at least one condition"
+
+            )
+
+
+        self.operator = operator
+
+        self.conditions = conditions
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\group_evaluator.py
+==================================================
+from .group import GroupOperator
+
+
+
+class ConditionGroupEvaluator:
+
+
+    def __init__(
+
+        self,
+
+        condition_evaluator
+
+    ):
+
+        self.condition_evaluator = condition_evaluator
+
+
+
+    def evaluate(
+
+        self,
+
+        group,
+
+        context,
+
+        arguments=None
+
+    ):
+
+
+        results = []
+
+
+        for condition in group.conditions:
+
+
+            result = self.condition_evaluator.evaluate(
+
+                condition,
+
+                context,
+
+                arguments
+
+            )
+
+
+            results.append(result)
+
+
+
+        if group.operator == GroupOperator.AND:
+
+            return all(results)
+
+
+
+        if group.operator == GroupOperator.OR:
+
+            return any(results)
+
+
+
+        return False
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\resolver.py
+==================================================
+from .enums import RightSourceType, SourceType
+
+
+
+class ConditionResolver:
+
+
+    def resolve_left(
+        self,
+        condition,
+        context,
+        arguments=None
+    ):
+
+        if condition.left_type == SourceType.PARAMETER:
+
+            parameter = context.get_parameter(
+                condition.left_name
+            )
+
+
+            if parameter is not None:
+
+                return parameter.value
+
+
+
+        if condition.left_type == SourceType.ARGUMENT:
+
+            if arguments:
+
+                return arguments.get(
+                    condition.left_name
+                )
+
+
+        return None
+
+
+
+    def resolve_right(
+        self,
+        condition,
+        context,
+        arguments=None
+    ):
+
+
+        if condition.right_type == RightSourceType.PARAMETER:
+
+            parameter = context.get_parameter(
+                condition.right_value
+            )
+
+
+            if parameter is not None:
+
+                return parameter.value
+
+
+
+        if condition.right_type == RightSourceType.ARGUMENT:
+
+            if arguments:
+
+                return arguments.get(
+                    condition.right_value
+                )
+
+
+        return condition.right_value
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\__init__.py
+==================================================
+from .condition import Condition
+from .evaluator import ConditionEvaluator
+
+from .enums import (
+    SourceType,
+    RightSourceType,
+    MatchMode,
+    Operator
+)
+from .group import (
+    ConditionGroup,
+    GroupOperator
+)
+
+from .group_evaluator import (
+    ConditionGroupEvaluator
+)
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\base.py
+==================================================
+class Comparator:
+
+
+    def compare(
+
+        self,
+
+        left,
+
+        right,
+
+        operator
+
+    ):
+
+        raise NotImplementedError
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\boolean.py
+==================================================
+from conditions.enums import Operator
+
+from .base import Comparator
+
+
+
+class BooleanComparator(Comparator):
+
+
+    def to_bool(
+
+        self,
+
+        value
+
+    ):
+
+
+        if isinstance(
+
+            value,
+
+            bool
+
+        ):
+
+            return value
+
+
+        return str(value).lower() in (
+
+            "true",
+
+            "1",
+
+            "yes"
+
+        )
+
+
+
+    def compare(
+
+        self,
+
+        left,
+
+        right,
+
+        operator
+
+    ):
+
+
+        left = self.to_bool(left)
+
+        right = self.to_bool(right)
+
+
+        if operator == Operator.EQUALS:
+
+            return left == right
+
+
+        if operator == Operator.NOT_EQUALS:
+
+            return left != right
+
+
+        raise ValueError(
+            f"Unsupported operator {operator}"
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\factory.py
+==================================================
+from .string import StringComparator
+from .integer import IntegerComparator
+from .boolean import BooleanComparator
+from .ipv4 import IPv4Comparator
+
+
+class ComparatorFactory:
+
+    @staticmethod
+    def get(
+        datatype
+    ):
+
+        if hasattr(
+            datatype,
+            "value"
+        ):
+
+            datatype = datatype.value
+
+        datatype = str(
+            datatype
+        ).lower()
+
+        if datatype == "integer":
+
+            return IntegerComparator()
+
+        if datatype == "boolean":
+
+            return BooleanComparator()
+
+        if datatype == "ipv4":
+
+            return IPv4Comparator()
+
+        return StringComparator()
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\integer.py
+==================================================
+from conditions.enums import Operator
+
+from .base import Comparator
+
+
+
+class IntegerComparator(Comparator):
+
+
+    def compare(
+
+        self,
+
+        left,
+
+        right,
+
+        operator
+
+    ):
+
+
+        left = int(left)
+
+        right = int(right)
+
+
+        if operator == Operator.EQUALS:
+
+            return left == right
+
+
+        if operator == Operator.NOT_EQUALS:
+
+            return left != right
+
+
+        if operator == Operator.GREATER_THAN:
+
+            return left > right
+
+
+        if operator == Operator.GREATER_THAN_EQUALS:
+
+            return left >= right
+
+
+        if operator == Operator.LESS_THAN:
+
+            return left < right
+
+
+        if operator == Operator.LESS_THAN_EQUALS:
+
+            return left <= right
+
+
+        raise ValueError(
+            f"Unsupported operator {operator}"
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\ipv4.py
+==================================================
+import ipaddress
+
+from conditions.enums import Operator
+
+from .base import Comparator
+
+
+
+class IPv4Comparator(Comparator):
+
+
+    def compare(
+
+        self,
+
+        left,
+
+        right,
+
+        operator
+
+    ):
+
+
+        left = ipaddress.ip_address(left)
+
+        right = ipaddress.ip_address(right)
+
+
+        if operator == Operator.EQUALS:
+
+            return left == right
+
+
+        if operator == Operator.NOT_EQUALS:
+
+            return left != right
+
+
+        raise ValueError(
+            f"Unsupported operator {operator}"
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\string.py
+==================================================
+import re
+
+from conditions.enums import Operator
+
+from .base import Comparator
+
+
+
+class StringComparator(Comparator):
+
+
+    def compare(
+
+        self,
+
+        left,
+
+        right,
+
+        operator
+
+    ):
+
+
+        left = str(left)
+
+        right = str(right)
+
+
+        if operator == Operator.EQUALS:
+
+            return left == right
+
+
+        if operator == Operator.NOT_EQUALS:
+
+            return left != right
+
+
+        if operator == Operator.CONTAINS:
+
+            return right in left
+
+
+        if operator == Operator.NOT_CONTAINS:
+
+            return right not in left
+
+
+        if operator == Operator.STARTS_WITH:
+
+            return left.startswith(right)
+
+
+        if operator == Operator.ENDS_WITH:
+
+            return left.endswith(right)
+
+
+        if operator == Operator.REGEX_MATCH:
+
+            return re.search(right, left) is not None
+
+
+        if operator == Operator.REGEX_NOT_MATCH:
+
+            return re.search(right, left) is None
+
+
+        raise ValueError(
+
+            f"Unsupported operator {operator}"
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\conditions\comparators\__init__.py
+==================================================
+from .factory import ComparatorFactory
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\action_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+
+@dataclass
+class ActionConfig:
+
+    type: str
+
+    parameters: dict = field(
+        default_factory=dict
+    )
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\condition_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+
+@dataclass
+class ConditionConfig:
+
+    left_type: str
+
+    left_name: str
+
+    operator: str
+
+    match_mode: str = "Any"
+
+    right_type: str | None = None
+
+    right_value: object = None
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\condition_group_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+from .condition_config import ConditionConfig
+
+
+@dataclass
+class ConditionGroupConfig:
+
+    operator: str = "AND"
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+    conditions: list[ConditionConfig] = field(
+        default_factory=list
+    )
+
+
+    def add_condition(
+        self,
+        condition: ConditionConfig
+    ):
+
+        self.conditions.append(
+            condition
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\firewall_config.py
+==================================================
+from dataclasses import dataclass, field
+
+from .ruleset_config import RulesetConfig
+
+
+@dataclass
+class FirewallConfiguration:
+
+
+    rulesets: list[RulesetConfig] = field(
+        default_factory=list
+    )
+
+
+    def add_ruleset(
+        self,
+        ruleset: RulesetConfig
+    ):
+
+        self.rulesets.append(
+            ruleset
+        )
+
+
+    def remove_ruleset(
+        self,
+        ruleset_id
+    ):
+
+        self.rulesets = [
+
+            ruleset
+
+            for ruleset in self.rulesets
+
+            if ruleset.id != ruleset_id
+
+        ]
+
+
+    def get_ruleset(
+        self,
+        ruleset_id
+    ):
+
+        for ruleset in self.rulesets:
+
+            if ruleset.id == ruleset_id:
+
+                return ruleset
+
+
+        return None
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\operation_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+
+@dataclass
+class OperationConfig:
+
+    name: str
+
+    parameters: dict = field(
+        default_factory=dict
+    )
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\ruleset_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+from .rule_config import RuleConfig
+
+
+@dataclass
+class RulesetConfig:
+
+    name: str
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+    rules: list[RuleConfig] = field(
+        default_factory=list
+    )
+
+
+    def add_rule(
+        self,
+        rule: RuleConfig
+    ):
+
+        rule.order = len(self.rules) + 1
+
+        self.rules.append(rule)
+
+
+    def remove_rule(
+        self,
+        rule_id: UUID
+    ):
+
+        self.rules = [
+            rule
+            for rule in self.rules
+            if rule.id != rule_id
+        ]
+
+
+        for index, rule in enumerate(
+            self.rules,
+            start=1
+        ):
+
+            rule.order = index
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\rule_config.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+
+from .condition_group_config import ConditionGroupConfig
+from .operation_config import OperationConfig
+from .action_config import ActionConfig
+
+
+@dataclass
+class RuleConfig:
+
+    name: str
+
+    id: UUID = field(default_factory=uuid4)
+
+    order: int = 0
+
+    condition_group: ConditionGroupConfig | None = None
+
+    operations: list[OperationConfig] = field(
+        default_factory=list
+    )
+
+    action: ActionConfig | None = None
+
+
+    def set_condition_group(
+        self,
+        condition_group: ConditionGroupConfig
+    ):
+        self.condition_group = condition_group
+
+
+    def add_operation(
+        self,
+        operation: OperationConfig
+    ):
+        self.operations.append(operation)
+
+
+    def set_action(
+        self,
+        action: ActionConfig
+    ):
+        self.action = action
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\models\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\repositories\ruleset_repository.py
+==================================================
+from uuid import UUID
+
+
+class RulesetRepository:
+
+    def __init__(self):
+
+        self._rulesets = {}
+
+
+    def save(self, ruleset):
+
+        self._rulesets[ruleset.id] = ruleset
+
+        return ruleset
+
+
+    def get(self, ruleset_id: UUID):
+
+        return self._rulesets.get(ruleset_id)
+
+
+    def list(self):
+
+        return list(self._rulesets.values())
+
+
+    def delete(self, ruleset_id: UUID):
+
+        self._rulesets.pop(
+            ruleset_id,
+            None
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\repositories\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\action_serializer.py
+==================================================
+from uuid import UUID, uuid4
+
+from configuration.models.action_config import ActionConfig
+
+from rulesets.argument_binding import ArgumentBinding
+
+from conditions.enums import (
+    SourceType,
+    RightSourceType
+)
+
+
+class ActionSerializer:
+
+    def serialize(
+        self,
+        action: ActionConfig
+    ):
+
+        if action is None:
+
+            return None
+
+        if not isinstance(
+            action,
+            ActionConfig
+        ):
+
+            raise ValueError(
+                f"Unsupported action type: {type(action)}"
+            )
+
+        parameters = dict(
+            action.parameters
+        )
+
+        argument_bindings = parameters.get(
+            "argument_bindings"
+        )
+
+        if argument_bindings is not None:
+
+            parameters["argument_bindings"] = [
+
+                self.serialize_argument_binding(
+                    binding
+                )
+
+                for binding in argument_bindings
+
+            ]
+
+        return {
+
+            "id": str(action.id),
+
+            "type": action.type,
+
+            "parameters": parameters
+
+        }
+
+    def serialize_argument_binding(
+        self,
+        binding
+    ):
+
+        if not isinstance(
+            binding,
+            ArgumentBinding
+        ):
+
+            raise ValueError(
+                f"Unsupported argument binding type: "
+                f"{type(binding)}"
+            )
+
+        return {
+
+            "argument_name": binding.argument_name,
+
+            "source_type": binding.source_type.value,
+
+            "source_name": binding.source_name,
+
+            "value": binding.value
+
+        }
+
+    def deserialize(
+        self,
+        data
+    ):
+
+        if data is None:
+
+            return None
+
+        action_id = data.get(
+            "id"
+        )
+
+        parameters = dict(
+            data.get(
+                "parameters",
+                {}
+            )
+        )
+
+        argument_bindings = parameters.get(
+            "argument_bindings"
+        )
+
+        if argument_bindings is not None:
+
+            parameters["argument_bindings"] = [
+
+                self.deserialize_argument_binding(
+                    binding
+                )
+
+                for binding in argument_bindings
+
+            ]
+
+        return ActionConfig(
+
+            type=data["type"],
+
+            parameters=parameters,
+
+            id=(
+
+                UUID(action_id)
+
+                if action_id
+
+                else uuid4()
+
+            )
+
+        )
+
+    def deserialize_argument_binding(
+        self,
+        data
+    ):
+
+        source_type = data.get(
+            "source_type"
+        )
+
+        if source_type == SourceType.PARAMETER.value:
+
+            resolved_source_type = SourceType.PARAMETER
+
+        elif source_type == RightSourceType.USER_VALUE.value:
+
+            resolved_source_type = RightSourceType.USER_VALUE
+
+        else:
+
+            raise ValueError(
+                f"Unsupported argument binding source: "
+                f"{source_type}"
+            )
+
+        return ArgumentBinding(
+
+            argument_name=data["argument_name"],
+
+            source_type=resolved_source_type,
+
+            source_name=data.get(
+                "source_name"
+            ),
+
+            value=data.get(
+                "value"
+            )
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\condition_serializer.py
+==================================================
+from uuid import UUID, uuid4
+
+from configuration.models.condition_config import ConditionConfig
+from configuration.models.condition_group_config import ConditionGroupConfig
+
+
+class ConditionSerializer:
+
+    def serialize(
+        self,
+        condition: ConditionConfig
+    ):
+
+        if condition is None:
+
+            return None
+
+        return {
+
+            "id": str(condition.id),
+
+            "left_type": condition.left_type,
+
+            "left_name": condition.left_name,
+
+            "operator": condition.operator,
+
+            "match_mode": condition.match_mode,
+
+            "right_type": condition.right_type,
+
+            "right_value": condition.right_value
+
+        }
+
+    def deserialize(
+        self,
+        data
+    ):
+
+        if data is None:
+
+            return None
+
+        condition_id = data.get(
+            "id"
+        )
+
+        return ConditionConfig(
+
+            left_type=data["left_type"],
+
+            left_name=data["left_name"],
+
+            operator=data["operator"],
+
+            match_mode=data.get(
+                "match_mode",
+                "Any"
+            ),
+
+            right_type=data.get(
+                "right_type"
+            ),
+
+            right_value=data.get(
+                "right_value"
+            ),
+
+            id=(
+                UUID(condition_id)
+                if condition_id
+                else uuid4()
+            )
+
+        )
+
+    def serialize_group(
+        self,
+        group: ConditionGroupConfig
+    ):
+
+        if group is None:
+
+            return None
+
+        return {
+
+            "id": str(group.id),
+
+            "operator": group.operator,
+
+            "conditions": [
+
+                self.serialize(
+                    condition
+                )
+
+                for condition in group.conditions
+
+            ]
+
+        }
+
+    def deserialize_group(
+        self,
+        data
+    ):
+
+        if data is None:
+
+            return None
+
+        group_id = data.get(
+            "id"
+        )
+
+        conditions = [
+
+            self.deserialize(
+                condition
+            )
+
+            for condition in data.get(
+                "conditions",
+                []
+            )
+
+        ]
+
+        return ConditionGroupConfig(
+
+            operator=data.get(
+                "operator",
+                "AND"
+            ),
+
+            id=(
+                UUID(group_id)
+                if group_id
+                else uuid4()
+            ),
+
+            conditions=conditions
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\firewall_configuration_deserializer.py
+==================================================
+from uuid import UUID, uuid4
+
+from configuration.models.firewall_config import FirewallConfiguration
+from configuration.models.ruleset_config import RulesetConfig
+from configuration.models.rule_config import RuleConfig
+
+from configuration.serializers.action_serializer import (
+    ActionSerializer
+)
+
+from configuration.serializers.operation_serializer import (
+    OperationSerializer
+)
+
+from configuration.serializers.condition_serializer import (
+    ConditionSerializer
+)
+
+
+class FirewallConfigurationDeserializer:
+
+    def __init__(self):
+
+        self.action_serializer = ActionSerializer()
+
+        self.operation_serializer = OperationSerializer()
+
+        self.condition_serializer = ConditionSerializer()
+
+    def deserialize(
+        self,
+        data: dict
+    ):
+
+        configuration = FirewallConfiguration()
+
+        for ruleset_data in data.get(
+            "rulesets",
+            []
+        ):
+
+            ruleset_id = ruleset_data.get(
+                "id"
+            )
+
+            ruleset = RulesetConfig(
+
+                name=ruleset_data["name"],
+
+                id=(
+                    UUID(ruleset_id)
+                    if ruleset_id
+                    else uuid4()
+                )
+
+            )
+
+            for rule_data in ruleset_data.get(
+                "rules",
+                []
+            ):
+
+                rule_id = rule_data.get(
+                    "id"
+                )
+
+                rule = RuleConfig(
+
+                    name=rule_data["name"],
+
+                    id=(
+                        UUID(rule_id)
+                        if rule_id
+                        else uuid4()
+                    ),
+
+                    order=rule_data.get(
+                        "order",
+                        0
+                    ),
+
+                    condition_group=(
+                        self.condition_serializer.deserialize_group(
+                            rule_data.get(
+                                "condition_group"
+                            )
+                        )
+                    ),
+
+                    operations=(
+                        self.operation_serializer.deserialize_many(
+                            rule_data.get(
+                                "operations",
+                                []
+                            )
+                        )
+                    ),
+
+                    action=(
+
+                        self.action_serializer.deserialize(
+                            rule_data["action"]
+                        )
+
+                        if rule_data.get(
+                            "action"
+                        )
+
+                        else None
+
+                    )
+
+                )
+
+                ruleset.add_rule(
+                    rule
+                )
+
+            configuration.add_ruleset(
+                ruleset
+            )
+
+        return configuration
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\firewall_configuration_serializer.py
+==================================================
+import json
+
+from configuration.models.firewall_config import FirewallConfiguration
+
+from configuration.serializers.ruleset_serializer import (
+    RulesetSerializer
+)
+
+
+class FirewallConfigurationSerializer:
+
+    def __init__(self):
+
+        self.ruleset_serializer = RulesetSerializer()
+
+    def serialize(
+        self,
+        configuration: FirewallConfiguration
+    ):
+
+        return self.export(
+            configuration
+        )
+
+    def export(
+        self,
+        configuration: FirewallConfiguration
+    ):
+
+        if configuration is None:
+
+            raise ValueError(
+                "Configuration cannot be None"
+            )
+
+        return {
+
+            "rulesets": [
+
+                self.ruleset_serializer.export(
+                    ruleset
+                )
+
+                for ruleset in configuration.rulesets
+
+            ]
+
+        }
+
+    def export_json(
+        self,
+        configuration: FirewallConfiguration
+    ):
+
+        return json.dumps(
+
+            self.export(
+                configuration
+            ),
+
+            indent=4
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\json_serializer.py
+==================================================
+import json
+from dataclasses import asdict, is_dataclass
+
+
+class JsonSerializer:
+
+
+    def serialize(
+        self,
+        obj
+    ):
+
+        if is_dataclass(obj):
+
+            obj = asdict(
+                obj
+            )
+
+
+        return json.dumps(
+
+            obj,
+
+            indent=4,
+
+            default=str
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\operation_serializer.py
+==================================================
+from uuid import UUID, uuid4
+
+from configuration.models.operation_config import OperationConfig
+
+
+class OperationSerializer:
+
+    def serialize(
+        self,
+        operation: OperationConfig
+    ):
+
+        if operation is None:
+
+            return None
+
+        if not isinstance(
+            operation,
+            OperationConfig
+        ):
+
+            raise ValueError(
+                f"Unsupported operation type: {type(operation)}"
+            )
+
+        return {
+
+            "id": str(operation.id),
+
+            "name": operation.name,
+
+            "parameters": dict(
+                operation.parameters
+            )
+
+        }
+
+    def serialize_many(
+        self,
+        operations
+    ):
+
+        return [
+
+            self.serialize(
+                operation
+            )
+
+            for operation in operations
+
+        ]
+
+    def deserialize(
+        self,
+        data
+    ):
+
+        if data is None:
+
+            return None
+
+        operation_id = data.get(
+            "id"
+        )
+
+        return OperationConfig(
+
+            name=data["name"],
+
+            parameters=dict(
+                data.get(
+                    "parameters",
+                    {}
+                )
+            ),
+
+            id=(
+
+                UUID(operation_id)
+
+                if operation_id
+
+                else uuid4()
+
+            )
+
+        )
+
+    def deserialize_many(
+        self,
+        data
+    ):
+
+        return [
+
+            self.deserialize(
+                operation
+            )
+
+            for operation in data
+
+        ]
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\ruleset_serializer.py
+==================================================
+from uuid import UUID, uuid4
+
+from configuration.models.ruleset_config import RulesetConfig
+from configuration.models.rule_config import RuleConfig
+
+from configuration.serializers.action_serializer import (
+    ActionSerializer
+)
+
+from configuration.serializers.operation_serializer import (
+    OperationSerializer
+)
+
+from configuration.serializers.condition_serializer import (
+    ConditionSerializer
+)
+
+
+class RulesetSerializer:
+
+    def __init__(self):
+
+        self.action_serializer = ActionSerializer()
+
+        self.operation_serializer = OperationSerializer()
+
+        self.condition_serializer = ConditionSerializer()
+
+    def export(
+        self,
+        ruleset: RulesetConfig
+    ):
+
+        return {
+
+            "id": str(ruleset.id),
+
+            "name": ruleset.name,
+
+            "rules": [
+
+                {
+
+                    "id": str(rule.id),
+
+                    "name": rule.name,
+
+                    "order": rule.order,
+
+                    "condition_group": (
+                        self.condition_serializer.serialize_group(
+                            rule.condition_group
+                        )
+                        if rule.condition_group is not None
+                        else None
+                    ),
+
+                    "operations": (
+                        self.operation_serializer.serialize_many(
+                            rule.operations
+                        )
+                    ),
+
+                    "action": (
+                        self.action_serializer.serialize(
+                            rule.action
+                        )
+                        if rule.action is not None
+                        else None
+                    )
+
+                }
+
+                for rule in ruleset.rules
+
+            ]
+
+        }
+
+    def import_ruleset(
+        self,
+        data: dict
+    ):
+
+        ruleset_id = data.get(
+            "id"
+        )
+
+        ruleset = RulesetConfig(
+
+            name=data["name"],
+
+            id=(
+                UUID(ruleset_id)
+                if ruleset_id
+                else uuid4()
+            )
+
+        )
+
+        for rule_data in data.get(
+            "rules",
+            []
+        ):
+
+            rule_id = rule_data.get(
+                "id"
+            )
+
+            rule = RuleConfig(
+
+                name=rule_data["name"],
+
+                id=(
+                    UUID(rule_id)
+                    if rule_id
+                    else uuid4()
+                ),
+
+                order=rule_data.get(
+                    "order",
+                    0
+                ),
+
+                condition_group=(
+                    self.condition_serializer.deserialize_group(
+                        rule_data.get(
+                            "condition_group"
+                        )
+                    )
+                ),
+
+                operations=(
+                    self.operation_serializer.deserialize_many(
+                        rule_data.get(
+                            "operations",
+                            []
+                        )
+                    )
+                ),
+
+                action=(
+
+                    self.action_serializer.deserialize(
+                        rule_data["action"]
+                    )
+
+                    if rule_data.get(
+                        "action"
+                    )
+
+                    else None
+
+                )
+
+            )
+
+            ruleset.add_rule(
+                rule
+            )
+
+        return ruleset
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\serializers\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\services\configuration_service.py
+==================================================
+class ConfigurationService:
+
+    def __init__(
+        self,
+        draft_service
+    ):
+
+        self.draft_service = draft_service
+
+    def get_configuration(
+        self,
+        draft_id
+    ):
+
+        draft = self.draft_service.get_draft(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        return draft.configuration
+
+    def update_configuration(
+        self,
+        draft_id,
+        configuration
+    ):
+
+        return self.draft_service.update_configuration(
+            draft_id,
+            configuration
+        )
+
+    def clear_changes(
+        self,
+        draft_id
+    ):
+
+        return self.draft_service.clear_changes(
+            draft_id
+        )
+
+    def commit(
+        self,
+        draft_id
+    ):
+
+        return self.draft_service.commit(
+            draft_id
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\services\ruleset_service.py
+==================================================
+from configuration.models.ruleset_config import RulesetConfig
+from configuration.models.rule_config import RuleConfig
+
+from configuration.serializers.ruleset_serializer import (
+    RulesetSerializer
+)
+
+
+class RulesetService:
+
+    def __init__(
+        self,
+        draft_service
+    ):
+
+        self.draft_service = draft_service
+
+        self.serializer = RulesetSerializer()
+
+    def get_draft(
+        self,
+        draft_id
+    ):
+
+        draft = self.draft_service.get_draft(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        return draft
+
+    def create_ruleset(
+        self,
+        draft_id,
+        name: str
+    ):
+
+        draft = self.get_draft(
+            draft_id
+        )
+
+        ruleset = RulesetConfig(
+            name=name
+        )
+
+        draft.configuration.add_ruleset(
+            ruleset
+        )
+
+        return ruleset
+
+    def list_rulesets(
+        self,
+        draft_id
+    ):
+
+        draft = self.get_draft(
+            draft_id
+        )
+
+        return draft.configuration.rulesets
+
+    def get_ruleset(
+        self,
+        draft_id,
+        ruleset_id
+    ):
+
+        draft = self.get_draft(
+            draft_id
+        )
+
+        return draft.configuration.get_ruleset(
+            ruleset_id
+        )
+
+    def delete_ruleset(
+        self,
+        draft_id,
+        ruleset_id
+    ):
+
+        draft = self.get_draft(
+            draft_id
+        )
+
+        ruleset = draft.configuration.get_ruleset(
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        draft.configuration.remove_ruleset(
+            ruleset_id
+        )
+
+        return ruleset
+
+    def add_rule(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_name
+    ):
+
+        ruleset = self.get_ruleset(
+            draft_id,
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        rule = RuleConfig(
+            name=rule_name
+        )
+
+        ruleset.add_rule(
+            rule
+        )
+
+        return rule
+
+    def delete_rule(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id
+    ):
+
+        ruleset = self.get_ruleset(
+            draft_id,
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        rule = None
+
+        for item in ruleset.rules:
+
+            if item.id == rule_id:
+
+                rule = item
+
+                break
+
+        if rule is None:
+
+            raise ValueError(
+                "Rule not found"
+            )
+
+        ruleset.remove_rule(
+            rule_id
+        )
+
+        return rule
+
+    def export_ruleset(
+        self,
+        draft_id,
+        ruleset_id
+    ):
+
+        ruleset = self.get_ruleset(
+            draft_id,
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        return self.serializer.export(
+            ruleset
+        )
+
+    def import_ruleset(
+        self,
+        draft_id,
+        data
+    ):
+
+        draft = self.get_draft(
+            draft_id
+        )
+
+        ruleset = self.serializer.import_ruleset(
+            data
+        )
+
+        draft.configuration.add_ruleset(
+            ruleset
+        )
+
+        return ruleset
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\services\rule_service.py
+==================================================
+from configuration.models.rule_config import RuleConfig
+
+
+class RuleService:
+
+    def __init__(
+        self,
+        draft_service
+    ):
+
+        self.draft_service = draft_service
+
+    def get_ruleset(
+        self,
+        draft_id,
+        ruleset_id
+    ):
+
+        draft = self.draft_service.get_draft(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        return draft.configuration.get_ruleset(
+            ruleset_id
+        )
+
+    def add_rule(
+        self,
+        draft_id,
+        ruleset_id,
+        name
+    ):
+
+        ruleset = self.get_ruleset(
+            draft_id,
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        rule = RuleConfig(
+            name=name
+        )
+
+        ruleset.add_rule(
+            rule
+        )
+
+        return rule
+
+    def get_rule(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id
+    ):
+
+        ruleset = self.get_ruleset(
+            draft_id,
+            ruleset_id
+        )
+
+        if ruleset is None:
+
+            raise ValueError(
+                "Ruleset not found"
+            )
+
+        for rule in ruleset.rules:
+
+            if rule.id == rule_id:
+
+                return rule
+
+        return None
+
+    def update_condition_group(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id,
+        condition_group
+    ):
+
+        rule = self.get_rule(
+            draft_id,
+            ruleset_id,
+            rule_id
+        )
+
+        if rule is None:
+
+            raise ValueError(
+                "Rule not found"
+            )
+
+        rule.condition_group = condition_group
+
+        return rule
+
+    def add_operation(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id,
+        operation
+    ):
+
+        rule = self.get_rule(
+            draft_id,
+            ruleset_id,
+            rule_id
+        )
+
+        if rule is None:
+
+            raise ValueError(
+                "Rule not found"
+            )
+
+        rule.operations.append(
+            operation
+        )
+
+        return rule
+
+    def remove_operation(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id,
+        operation_index
+    ):
+
+        rule = self.get_rule(
+            draft_id,
+            ruleset_id,
+            rule_id
+        )
+
+        if rule is None:
+
+            raise ValueError(
+                "Rule not found"
+            )
+
+        if (
+            operation_index < 0
+            or operation_index >= len(rule.operations)
+        ):
+
+            raise IndexError(
+                "Operation index out of range"
+            )
+
+        rule.operations.pop(
+            operation_index
+        )
+
+        return rule
+
+    def set_action(
+        self,
+        draft_id,
+        ruleset_id,
+        rule_id,
+        action
+    ):
+
+        rule = self.get_rule(
+            draft_id,
+            ruleset_id,
+            rule_id
+        )
+
+        if rule is None:
+
+            raise ValueError(
+                "Rule not found"
+            )
+
+        rule.action = action
+
+        return rule
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\configuration\services\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\drafts\draft.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
+
+from configuration.models.firewall_config import FirewallConfiguration
+
+
+@dataclass
+class Draft:
+
+    base_version_id: UUID
+
+    configuration: FirewallConfiguration
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+    created_at: datetime = field(
+        default_factory=lambda:
+        datetime.now(timezone.utc)
+    )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\drafts\draft_repository.py
+==================================================
+from uuid import UUID
+
+
+class DraftRepository:
+
+    def __init__(self):
+
+        self.drafts = {}
+
+    def save(
+        self,
+        draft
+    ):
+
+        self.drafts[draft.id] = draft
+
+        return draft
+
+    def get(
+        self,
+        draft_id
+    ):
+
+        if isinstance(
+            draft_id,
+            str
+        ):
+
+            try:
+
+                draft_id = UUID(
+                    draft_id
+                )
+
+            except ValueError:
+
+                return None
+
+        return self.drafts.get(
+            draft_id
+        )
+
+    def list(
+        self
+    ):
+
+        return list(
+            self.drafts.values()
+        )
+
+    def delete(
+        self,
+        draft_id
+    ):
+
+        if isinstance(
+            draft_id,
+            str
+        ):
+
+            try:
+
+                draft_id = UUID(
+                    draft_id
+                )
+
+            except ValueError:
+
+                return
+
+        self.drafts.pop(
+            draft_id,
+            None
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\drafts\draft_service.py
+==================================================
+import copy
+
+from drafts.draft import Draft
+
+
+class DraftService:
+
+    def __init__(
+        self,
+        repository,
+        version_service
+    ):
+
+        self.repository = repository
+
+        self.version_service = version_service
+
+    def create_draft(
+        self,
+        version_id,
+        configuration
+    ):
+
+        base_version = self.version_service.get_version(
+            version_id
+        )
+
+        if base_version is None:
+
+            raise ValueError(
+                "Version not found"
+            )
+
+        draft = Draft(
+
+            base_version_id=base_version.id,
+
+            configuration=copy.deepcopy(
+                configuration
+            )
+
+        )
+
+        return self.repository.save(
+            draft
+        )
+
+    def get_draft(
+        self,
+        draft_id
+    ):
+
+        return self.repository.get(
+            draft_id
+        )
+
+    def list_drafts(
+        self
+    ):
+
+        return self.repository.list()
+
+    def update_configuration(
+        self,
+        draft_id,
+        configuration
+    ):
+
+        draft = self.repository.get(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        draft.configuration = copy.deepcopy(
+            configuration
+        )
+
+        return self.repository.save(
+            draft
+        )
+
+    def clear_changes(
+        self,
+        draft_id
+    ):
+
+        draft = self.repository.get(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        self.repository.delete(
+            draft_id
+        )
+
+        return True
+
+    def commit(
+        self,
+        draft_id
+    ):
+
+        draft = self.repository.get(
+            draft_id
+        )
+
+        if draft is None:
+
+            raise ValueError(
+                "Draft not found"
+            )
+
+        version = self.version_service.create_version(
+
+            copy.deepcopy(
+                draft.configuration
+            )
+
+        )
+
+        self.repository.delete(
+            draft_id
+        )
+
+        return version
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\drafts\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\engine\context.py
+==================================================
+from parameters import (
+    ParameterStore,
+    Parameter,
+    ParameterScope
+)
+
+from arguments import ArgumentStore
+
+
+class ExecutionContext:
+
+    def __init__(self):
+
+        self.parameters = ParameterStore()
+
+        self.arguments = ArgumentStore()
+
+        self.ruleset_path = []
+
+    def set_parameter(
+        self,
+        name,
+        value,
+        datatype="String",
+        scope=ParameterScope.LOCAL
+    ):
+
+        parameter = Parameter(
+
+            name=name,
+
+            value=value,
+
+            datatype=datatype,
+
+            scope=scope
+
+        )
+
+        self.parameters.set(
+            parameter
+        )
+
+    def get_parameter(
+        self,
+        name
+    ):
+
+        return self.parameters.get_parameter(
+            name
+        )
+
+    def set_argument(
+        self,
+        name,
+        value
+    ):
+
+        self.arguments.set(
+            name,
+            value
+        )
+
+    def get_argument(
+        self,
+        name
+    ):
+
+        return self.arguments.get(
+            name
+        )
+
+    # -------------------------
+    # Ruleset execution path
+    # -------------------------
+
+    def enter_ruleset(
+        self,
+        ruleset_name
+    ):
+
+        self.ruleset_path.append(
+            ruleset_name
+        )
+
+    def exit_ruleset(
+        self
+    ):
+
+        if self.ruleset_path:
+
+            return self.ruleset_path.pop()
+
+        return None
+
+    def get_ruleset_path(
+        self
+    ):
+
+        return list(
+            self.ruleset_path
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\engine\__init__.py
+==================================================
+from engine.context import ExecutionContext
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\decode\base64_decode.py
+==================================================
+import base64
+
+
+def execute(value):
+
+    if not isinstance(value, str):
+
+        raise TypeError(
+            "Base64 decode accepts string input"
+        )
+
+
+    try:
+
+        decoded = base64.b64decode(
+            value
+        ).decode("utf-8")
+
+
+    except Exception as error:
+
+        raise ValueError(
+            f"Invalid Base64 value: {error}"
+        )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "Base64Decode",
+
+        "result": decoded
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\decode\hex_decode.py
+==================================================
+def execute(value):
+
+    if not isinstance(value, str):
+
+        raise TypeError(
+            "Hex decode accepts string input"
+        )
+
+
+    try:
+
+        decoded = bytes.fromhex(
+            value
+        ).decode("utf-8")
+
+
+    except Exception as error:
+
+        raise ValueError(
+            f"Invalid hex value: {error}"
+        )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "HexDecode",
+
+        "result": decoded
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\decode\__init__.py
+==================================================
+from .base64_decode import execute
+from .hex_decode import execute as hex_decode
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\encode\base64_encode.py
+==================================================
+import base64
+
+
+
+def execute(value):
+
+    if not isinstance(value, str):
+
+        raise TypeError(
+            "Base64 encode accepts string input"
+        )
+
+
+    encoded = base64.b64encode(
+
+        value.encode("utf-8")
+
+    ).decode("utf-8")
+
+
+    return {
+
+        "success": True,
+
+        "operation": "Base64Encode",
+
+        "result": encoded
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\encode\__init__.py
+==================================================
+from .base64_encode import execute
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\lookup\conditions.py
+==================================================
+from dataclasses import dataclass
+
+
+
+class MatchType:
+
+    REGEX = "Regex"
+
+    STRING = "String"
+
+    STRING_SIMILARITY = "String_Similarity"
+
+
+
+@dataclass
+class MatchCondition:
+
+    column: str
+
+    match_type: str
+
+    value: str
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\lookup\match_value.py
+==================================================
+from .matchers.regex_matcher import match as regex_match
+
+
+
+def execute(
+
+    input_value,
+
+    rows,
+
+    conditions,
+
+    context=None,
+
+    save_parameter_name=None
+
+):
+
+    for row in rows:
+
+
+        matched = True
+
+
+        for condition in conditions:
+
+
+            column_value = row.get(
+                condition.column
+            )
+
+
+            if condition.match_type == "Regex":
+
+
+                if not regex_match(
+
+                    input_value,
+
+                    column_value
+
+                ):
+
+                    matched = False
+
+                    break
+
+
+
+        if matched:
+
+
+            if context and save_parameter_name:
+
+
+                context.set_parameter(
+
+                    save_parameter_name,
+
+                    row
+
+                )
+
+
+            return {
+
+                "success": True,
+
+                "match": True,
+
+                "row": row
+
+            }
+
+
+
+    return {
+
+        "success": True,
+
+        "match": False,
+
+        "row": None
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\lookup\__init__.py
+==================================================
+from .match_value import execute
+from .conditions import MatchCondition, MatchType
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\lookup\matchers\regex_matcher.py
+==================================================
+import re
+
+
+
+def match(
+    input_value,
+    pattern
+):
+
+    if not isinstance(input_value, str):
+
+        input_value = str(input_value)
+
+
+    result = re.match(
+        pattern,
+        input_value
+    )
+
+
+    return result is not None
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\lookup\matchers\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\arithmetic.py
+==================================================
+from enum import Enum
+
+
+class ArithmeticOperator(Enum):
+
+    ADD = "Add"
+    SUBTRACT = "Subtract"
+    MULTIPLY = "Multiply"
+    DIVIDE = "Divide"
+
+
+
+def execute(
+    value1,
+    value2,
+    operator
+):
+
+    if operator == ArithmeticOperator.ADD:
+
+        result = value1 + value2
+
+
+    elif operator == ArithmeticOperator.SUBTRACT:
+
+        result = value1 - value2
+
+
+    elif operator == ArithmeticOperator.MULTIPLY:
+
+        result = value1 * value2
+
+
+    elif operator == ArithmeticOperator.DIVIDE:
+
+        if value2 == 0:
+
+            raise ValueError(
+                "Division by zero is not allowed"
+            )
+
+        result = value1 / value2
+
+
+    else:
+
+        raise ValueError(
+            f"Unsupported operator: {operator}"
+        )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "Arithmetic",
+
+        "result": result
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\concatenate.py
+==================================================
+def execute(
+    values,
+    separator=""
+):
+
+    if not isinstance(values, list):
+
+        raise TypeError(
+            "Values must be a list"
+        )
+
+
+    result = separator.join(
+        str(value)
+        for value in values
+    )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "ConcatenateStrings",
+
+        "result": result
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\convert_integer.py
+==================================================
+def execute(value):
+
+    try:
+
+        result = int(value)
+
+
+    except ValueError:
+
+        raise ValueError(
+            f"Cannot convert {value} to integer"
+        )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "ConvertToInteger",
+
+        "result": result
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\convert_string.py
+==================================================
+def execute(value):
+
+    result = str(value)
+
+
+    return {
+
+        "success": True,
+
+        "operation": "ConvertToString",
+
+        "result": result
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\regex_replace.py
+==================================================
+import re
+
+
+
+def match(
+    value,
+    pattern
+):
+
+    result = re.search(
+        pattern,
+        value
+    )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "RegexMatch",
+
+        "result": result is not None
+
+    }
+
+
+
+def replace(
+    value,
+    pattern,
+    replacement
+):
+
+    result = re.sub(
+        pattern,
+        replacement,
+        value
+    )
+
+
+    return {
+
+        "success": True,
+
+        "operation": "RegexReplace",
+
+        "result": result
+
+    }
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\manipulation\__init__.py
+==================================================
+from .arithmetic import (
+    execute,
+    ArithmeticOperator
+)
+
+from .concatenate import (
+    execute as concatenate
+)
+from .convert_string import (
+    execute as convert_string)
+
+from .convert_integer import (
+    execute as convert_integer)
+
+from .regex_replace import (
+    match,
+    replace
+)
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\parameter\set_parameter.py
+==================================================
+from parameters import ParameterScope
+
+
+class SetParameterOperation:
+
+    name = "set-parameter"
+
+    def execute(
+        self,
+        context,
+        parameters
+    ):
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
+            raise ValueError(
+                "set-parameter parameters must be a dictionary"
+            )
+
+        if "name" not in parameters:
+
+            raise ValueError(
+                "set-parameter requires 'name'"
+            )
+
+        if "value" not in parameters:
+
+            raise ValueError(
+                "set-parameter requires 'value'"
+            )
+
+        name = parameters["name"]
+
+        value = parameters["value"]
+
+        datatype = parameters.get(
+            "datatype",
+            "String"
+        )
+
+        scope = parameters.get(
+            "scope",
+            ParameterScope.LOCAL
+        )
+
+        if isinstance(
+            scope,
+            str
+        ):
+
+            try:
+
+                scope = ParameterScope(
+                    scope
+                )
+
+            except ValueError:
+
+                raise ValueError(
+                    f"Invalid parameter scope: {scope}"
+                )
+
+        if not isinstance(
+            scope,
+            ParameterScope
+        ):
+
+            raise ValueError(
+                "scope must be a ParameterScope or valid scope string"
+            )
+
+        context.set_parameter(
+
+            name=name,
+
+            value=value,
+
+            datatype=datatype,
+
+            scope=scope
+
+        )
+
+        return True
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\operations\parameter\__init__.py
+==================================================
+from .set_parameter import (
+    execute,
+    Parameter,
+    DataType
+)
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\parameters\parameter.py
+==================================================
+from dataclasses import dataclass
+from enum import Enum
+
+
+
+class ParameterScope(Enum):
+
+    SYSTEM = "System"
+
+    GLOBAL = "Global"
+
+    LOCAL = "Local"
+
+
+
+SCOPE_PRIORITY = {
+
+    ParameterScope.LOCAL: 1,
+
+    ParameterScope.GLOBAL: 2,
+
+    ParameterScope.SYSTEM: 3
+
+}
+
+
+
+@dataclass
+class Parameter:
+
+    name: str
+
+    value: object
+
+    datatype: str
+
+    scope: ParameterScope = ParameterScope.LOCAL
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\parameters\store.py
+==================================================
+from .parameter import (
+    Parameter,
+    SCOPE_PRIORITY
+)
+
+
+
+class ParameterStore:
+
+
+    def __init__(self):
+
+        self.parameters = {}
+
+
+
+    def set(
+
+        self,
+
+        parameter: Parameter
+
+    ):
+
+
+        existing = self.parameters.get(
+
+            parameter.name
+
+        )
+
+
+        if existing:
+
+
+            existing_priority = SCOPE_PRIORITY[
+
+                existing.scope
+
+            ]
+
+
+            new_priority = SCOPE_PRIORITY[
+
+                parameter.scope
+
+            ]
+
+
+            if existing_priority > new_priority:
+
+
+                raise ValueError(
+
+                    f"Cannot overwrite {existing.scope.value} parameter: {parameter.name}"
+
+                )
+
+
+
+        self.parameters[parameter.name] = parameter
+
+
+
+    def get(
+
+        self,
+
+        name
+
+    ):
+
+        parameter = self.parameters.get(name)
+
+
+        if parameter:
+
+            return parameter.value
+
+
+        return None
+
+
+
+    def get_parameter(
+
+        self,
+
+        name
+
+    ):
+
+        return self.parameters.get(name)
+
+
+
+    def exists(
+
+        self,
+
+        name
+
+    ):
+
+        return name in self.parameters
+
+
+
+    def remove(
+
+        self,
+
+        name
+
+    ):
+
+
+        if name in self.parameters:
+
+            del self.parameters[name]
+
+
+
+    def all(
+
+        self
+
+    ):
+
+        return self.parameters.values()
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\parameters\__init__.py
+==================================================
+from .store import ParameterStore
+from .parameter import Parameter, ParameterScope
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\action_definition.py
+==================================================
+from enum import Enum
+
+
+class ActionType(Enum):
+
+    CONTINUE = "Continue"
+
+    JUMP_TO_RULESET = "Jump_To_Ruleset"
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\condition.py
+==================================================
+from dataclasses import dataclass
+
+
+@dataclass
+class Condition:
+
+    field: str
+
+    operator: str
+
+    value: object
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\evaluator.py
+==================================================
+from .rule import Rule
+from conditions import ConditionGroupEvaluator
+from .operation_executor import OperationExecutor
+
+
+
+class RuleEvaluator:
+
+
+    def __init__(
+
+        self,
+
+        condition_group_evaluator: ConditionGroupEvaluator,
+
+        operation_executor: OperationExecutor
+
+    ):
+
+        self.condition_group_evaluator = condition_group_evaluator
+
+        self.operation_executor = operation_executor
+
+
+
+    def evaluate(
+
+        self,
+
+        rule: Rule,
+
+        context,
+
+        arguments=None
+
+    ):
+
+
+        rule.validate()
+
+
+        matched = self.condition_group_evaluator.evaluate(
+
+            rule.condition_group,
+
+            context,
+
+            arguments
+
+        )
+
+
+        if not matched:
+
+            return None
+
+
+
+        for operation in rule.operations:
+
+
+            self.operation_executor.execute(
+
+                operation,
+
+                context
+
+            )
+
+
+
+        return rule.action.execute(
+            context
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\operation_definition.py
+==================================================
+from dataclasses import dataclass, field
+
+
+
+@dataclass
+class Operation:
+
+
+    name: str
+
+
+    parameters: dict = field(
+
+        default_factory=dict
+
+    )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\operation_executor.py
+==================================================
+from operations.parameter.set_parameter import (
+    SetParameterOperation
+)
+
+
+class OperationExecutor:
+
+    def __init__(self):
+
+        self.operations = {
+
+            "set-parameter": SetParameterOperation()
+
+        }
+
+    def execute(
+        self,
+        operation,
+        context
+    ):
+
+        if operation is None:
+
+            return False
+
+        operation_name = operation.name
+
+        handler = self.operations.get(
+            operation_name
+        )
+
+        if handler is None:
+
+            return False
+
+        return handler.execute(
+
+            context,
+
+            operation.parameters
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\rule.py
+==================================================
+from .operation_definition import Operation
+from actions import Action
+
+
+
+class Rule:
+
+
+    def __init__(
+
+        self,
+
+        name,
+
+        description=None
+
+    ):
+
+        self.name = name
+
+        self.description = description
+
+        self.condition_group = None
+
+        self.operations = []
+
+        self.action = None
+
+
+
+    def set_condition_group(
+
+        self,
+
+        condition_group
+
+    ):
+
+        self.condition_group = condition_group
+
+
+
+    def add_operation(
+
+        self,
+
+        operation: Operation
+
+    ):
+
+        self.operations.append(operation)
+
+
+
+    def set_action(
+
+        self,
+
+        action: Action
+
+    ):
+
+        self.action = action
+
+
+
+    def validate(self):
+
+        if self.condition_group is None:
+
+            raise ValueError(
+
+                "Rule requires condition group"
+
+            )
+
+
+        if self.action is None:
+
+            raise ValueError(
+
+                "Rule requires action"
+
+            )
+
+
+        return True
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rules\__init__.py
+==================================================
+from .rule import Rule
+from .condition import Condition
+from .operation_defination import Operation
+from .evaluator import RuleEvaluator
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\argument.py
+==================================================
+from dataclasses import dataclass
+from enum import Enum
+
+
+
+class DataType(Enum):
+
+    STRING = "String"
+
+    INTEGER = "Integer"
+
+    BOOLEAN = "Boolean"
+
+    IPV4 = "IPv4"
+
+    IPV6 = "IPv6"
+
+
+
+class CollectionType(Enum):
+
+    SCALAR = "Scalar"
+
+    SET = "Set"
+
+    NODE = "Node"
+
+
+
+@dataclass
+class Argument:
+
+    name: str
+
+    datatype: DataType
+
+    collection_type: CollectionType = CollectionType.SCALAR
+
+    default_value: object = None
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\argument_binding.py
+==================================================
+from dataclasses import dataclass
+
+from conditions.enums import (
+    SourceType,
+    RightSourceType
+)
+
+
+
+@dataclass
+class ArgumentBinding:
+
+
+    argument_name: str
+
+
+    source_type: object
+
+
+    source_name: str = None
+
+
+    value: object = None
+
+
+
+    def validate(self):
+
+
+        if self.source_type == SourceType.PARAMETER:
+
+
+            if self.source_name is None:
+
+                raise ValueError(
+
+                    "Parameter source requires source_name"
+
+                )
+
+
+            if self.value is not None:
+
+                raise ValueError(
+
+                    "Parameter source cannot have value"
+
+                )
+
+
+
+        elif self.source_type == RightSourceType.USER_VALUE:
+
+
+            if self.value is None:
+
+                raise ValueError(
+
+                    "User value source requires value"
+
+                )
+
+
+            if self.source_name is not None:
+
+                raise ValueError(
+
+                    "User value source cannot have source_name"
+
+                )
+
+
+        else:
+
+            raise ValueError(
+
+                f"Unsupported argument source: {self.source_type}"
+
+            )
+
+
+        return True
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\executor.py
+==================================================
+from actions import (
+    ContinueAction,
+    JumpToRuleset
+)
+
+from conditions.enums import (
+    SourceType,
+    RightSourceType
+)
+
+
+
+class RulesetExecutor:
+
+
+    MAX_JUMP_DEPTH = 50
+
+
+
+    def __init__(
+        self,
+        rule_evaluator,
+        registry
+    ):
+
+        self.rule_evaluator = rule_evaluator
+
+        self.registry = registry
+
+
+
+    def resolve_arguments(
+        self,
+        bindings,
+        context
+    ):
+
+        if not bindings:
+
+            return None
+
+
+        arguments = {}
+
+
+        for binding in bindings:
+
+
+            binding.validate()
+
+
+
+            if binding.source_type == SourceType.PARAMETER:
+
+
+                parameter = context.get_parameter(
+
+                    binding.source_name
+
+                )
+
+
+                if parameter is None:
+
+                    raise ValueError(
+
+                        f"Missing parameter: {binding.source_name}"
+
+                    )
+
+
+                arguments[
+
+                    binding.argument_name
+
+                ] = parameter.value
+
+
+
+            elif binding.source_type == RightSourceType.USER_VALUE:
+
+
+                arguments[
+
+                    binding.argument_name
+
+                ] = binding.value
+
+
+
+            else:
+
+                raise ValueError(
+
+                    f"Unsupported argument source: {binding.source_type}"
+
+                )
+
+
+        return arguments
+
+
+
+    def execute(
+        self,
+        ruleset,
+        context,
+        arguments=None,
+        depth=0
+    ):
+
+
+        if depth > self.MAX_JUMP_DEPTH:
+
+            raise RuntimeError(
+
+                "Maximum ruleset jump depth exceeded"
+
+            )
+
+
+
+        ruleset.validate()
+
+
+        arguments = ruleset.validate_arguments(
+
+            arguments
+
+        )
+
+
+
+        context.enter_ruleset(
+
+            ruleset.name
+
+        )
+
+
+        try:
+
+
+            for rule in ruleset.rules:
+
+
+                result = self.rule_evaluator.evaluate(
+
+                    rule,
+
+                    context,
+
+                    arguments
+
+                )
+
+
+
+                if result is None:
+
+                    continue
+
+
+
+                if isinstance(
+
+                    result,
+
+                    ContinueAction
+
+                ):
+
+                    continue
+
+
+
+                if isinstance(
+
+                    result,
+
+                    JumpToRuleset
+
+                ):
+
+
+                    target = self.registry.get(
+
+                        result.ruleset_name
+
+                    )
+
+
+                    if target is None:
+
+                        raise ValueError(
+
+                            f"Ruleset not found: {result.ruleset_name}"
+
+                        )
+
+
+
+                    target_arguments = self.resolve_arguments(
+
+                        result.argument_bindings,
+
+                        context
+
+                    )
+
+
+
+                    self.execute(
+
+                        target,
+
+                        context,
+
+                        target_arguments,
+
+                        depth + 1
+
+                    )
+
+
+                    continue
+
+
+
+                return result
+
+
+
+        finally:
+
+            context.exit_ruleset()
+
+
+
+        return None
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\registry.py
+==================================================
+class RulesetRegistry:
+
+
+    def __init__(self):
+
+        self.rulesets = {}
+
+
+
+    def register(
+        self,
+        ruleset
+    ):
+
+        if ruleset.name in self.rulesets:
+
+            raise ValueError(
+                f"Ruleset already exists: {ruleset.name}"
+            )
+
+
+        self.rulesets[ruleset.name] = ruleset
+
+
+
+    def get(
+        self,
+        name
+    ):
+
+        ruleset = self.rulesets.get(name)
+
+
+        if ruleset is None:
+
+            raise ValueError(
+                f"Ruleset not found: {name}"
+            )
+
+
+        return ruleset
+
+
+
+    def exists(
+        self,
+        name
+    ):
+
+        return name in self.rulesets
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\ruleset.py
+==================================================
+from .argument import Argument
+
+
+
+class Ruleset:
+
+
+    def __init__(
+        self,
+        name,
+        description=None
+    ):
+
+        self.name = name
+
+        self.description = description
+
+        self.arguments = []
+
+        self.rules = []
+
+
+
+    def add_argument(
+        self,
+        argument: Argument
+    ):
+
+        if self.get_argument(argument.name):
+
+            raise ValueError(
+                f"Argument already exists: {argument.name}"
+            )
+
+
+        self.arguments.append(argument)
+
+
+
+    def add_rule(
+        self,
+        rule
+    ):
+
+        self.rules.append(rule)
+
+
+
+    def get_argument(
+        self,
+        name
+    ):
+
+        for argument in self.arguments:
+
+            if argument.name == name:
+
+                return argument
+
+
+        return None
+
+
+
+    def get_rule(
+        self,
+        name
+    ):
+
+        for rule in self.rules:
+
+            if rule.name == name:
+
+                return rule
+
+
+        return None
+
+
+
+    def validate_arguments(
+        self,
+        arguments=None
+    ):
+
+        arguments = arguments or {}
+
+
+        #
+        # Ruleset accepts no arguments
+        #
+
+        if not self.arguments:
+
+
+            if arguments:
+
+                raise ValueError(
+
+                    f"Ruleset {self.name} does not accept arguments"
+
+                )
+
+
+            return {}
+
+
+
+        #
+        # Check unknown arguments first
+        #
+
+        for name in arguments:
+
+
+            if self.get_argument(name) is None:
+
+                raise ValueError(
+
+                    f"Unknown argument: {name}"
+
+                )
+
+
+
+        #
+        # Resolve arguments and defaults
+        #
+
+        resolved = {}
+
+
+        for argument in self.arguments:
+
+
+            if argument.name in arguments:
+
+                resolved[
+
+                    argument.name
+
+                ] = arguments[argument.name]
+
+
+            elif argument.default_value is not None:
+
+                resolved[
+
+                    argument.name
+
+                ] = argument.default_value
+
+
+            else:
+
+                raise ValueError(
+
+                    f"Missing argument: {argument.name}"
+
+                )
+
+
+
+        #
+        # Validate resolved arguments
+        #
+
+        self.validate_argument_types(
+
+            resolved
+
+        )
+
+
+        return resolved
+
+
+
+    def validate_argument_types(
+        self,
+        arguments
+    ):
+
+        if not arguments:
+
+            return True
+
+
+
+        for name, value in arguments.items():
+
+
+            argument = self.get_argument(
+
+                name
+
+            )
+
+
+            if argument is None:
+
+                raise ValueError(
+
+                    f"Unknown argument: {name}"
+
+                )
+
+
+
+            datatype = argument.datatype.value
+
+            collection_type = argument.collection_type.value
+
+
+
+            if collection_type in (
+
+                "Set",
+
+                "Node"
+
+            ):
+
+
+                if not isinstance(
+
+                    value,
+
+                    (list, set, tuple)
+
+                ):
+
+                    raise ValueError(
+
+                        f"Argument {name} expects collection value"
+
+                    )
+
+
+                values = value
+
+
+
+            else:
+
+                values = [
+
+                    value
+
+                ]
+
+
+
+            for item in values:
+
+
+                if datatype == "String":
+
+                    valid = isinstance(
+
+                        item,
+
+                        str
+
+                    )
+
+
+                elif datatype == "Integer":
+
+                    valid = isinstance(
+
+                        item,
+
+                        int
+
+                    ) and not isinstance(
+
+                        item,
+
+                        bool
+
+                    )
+
+
+                elif datatype == "Boolean":
+
+                    valid = isinstance(
+
+                        item,
+
+                        bool
+
+                    )
+
+
+                elif datatype in (
+
+                    "IPv4",
+
+                    "IPv6"
+
+                ):
+
+                    valid = isinstance(
+
+                        item,
+
+                        str
+
+                    )
+
+
+                else:
+
+                    valid = True
+
+
+
+                if not valid:
+
+                    raise ValueError(
+
+                        f"Argument {name} expects {datatype}"
+
+                    )
+
+
+        return True
+
+
+
+    def validate(self):
+
+        if not self.rules:
+
+            raise ValueError(
+
+                "Ruleset requires at least one rule"
+
+            )
+
+
+        return True
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\rulesets\__init__.py
+==================================================
+from .ruleset import Ruleset
+from .argument import Argument, DataType, CollectionType
+from .registry import RulesetRegistry
+from .executor import RulesetExecutor
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\runtime\builder.py
+==================================================
+import copy
+
+from configuration.models.ruleset_config import RulesetConfig
+
+from rulesets.ruleset import Ruleset
+from rules.rule import Rule
+
+from actions.action_executor import ActionExecutor
+
+from conditions.group import (
+    ConditionGroup,
+    GroupOperator
+)
+
+from conditions.enums import (
+    SourceType,
+    RightSourceType,
+    MatchMode,
+    Operator
+)
+
+
+class RuntimeBuilder:
+
+    def __init__(
+        self
+    ):
+
+        self.action_executor = ActionExecutor()
+
+    def build_ruleset(
+        self,
+        ruleset_config: RulesetConfig
+    ):
+
+        ruleset = Ruleset(
+
+            name=ruleset_config.name
+
+        )
+
+        for rule_config in ruleset_config.rules:
+
+            rule = self.build_rule(
+
+                rule_config
+
+            )
+
+            ruleset.add_rule(
+
+                rule
+
+            )
+
+        return ruleset
+
+    def build_rulesets(
+        self,
+        firewall_configuration
+    ):
+
+        runtime_rulesets = []
+
+        for ruleset_config in firewall_configuration.rulesets:
+
+            runtime_rulesets.append(
+
+                self.build_ruleset(
+
+                    ruleset_config
+
+                )
+
+            )
+
+        return runtime_rulesets
+
+    def build_rule(
+        self,
+        rule_config
+    ):
+
+        rule = Rule(
+
+            name=rule_config.name
+
+        )
+
+        #
+        # Conditions
+        #
+
+        condition_group = self.build_condition_group(
+
+            rule_config.condition_group
+
+        )
+
+        rule.set_condition_group(
+
+            condition_group
+
+        )
+
+        #
+        # Operations
+        #
+
+        for operation in rule_config.operations:
+
+            rule.add_operation(
+
+                operation
+
+            )
+
+        #
+        # Action
+        #
+
+        runtime_action = self.action_executor.build(
+
+            rule_config.action
+
+        )
+
+        rule.set_action(
+
+            runtime_action
+
+        )
+
+        return rule
+
+    def build_condition_group(
+        self,
+        group_config
+    ):
+
+        if group_config is None:
+
+            return None
+
+        try:
+
+            group_operator = GroupOperator(
+                group_config.operator
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                f"Invalid condition group operator: "
+                f"{group_config.operator}"
+            )
+
+        conditions = []
+
+        for condition_config in group_config.conditions:
+
+            conditions.append(
+
+                self.build_condition(
+
+                    condition_config
+
+                )
+
+            )
+
+        return ConditionGroup(
+
+            operator=group_operator,
+
+            conditions=conditions
+
+        )
+
+    def build_condition(
+        self,
+        condition_config
+    ):
+
+        condition = copy.deepcopy(
+            condition_config
+        )
+
+        try:
+
+            condition.left_type = SourceType(
+                condition.left_type
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                f"Invalid condition left_type: "
+                f"{condition.left_type}"
+            )
+
+        try:
+
+            condition.operator = Operator(
+                condition.operator
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                f"Invalid condition operator: "
+                f"{condition.operator}"
+            )
+
+        try:
+
+            condition.match_mode = MatchMode(
+                condition.match_mode
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                f"Invalid condition match_mode: "
+                f"{condition.match_mode}"
+            )
+
+        if condition.right_type is not None:
+
+            try:
+
+                condition.right_type = RightSourceType(
+                    condition.right_type
+                )
+
+            except ValueError:
+
+                raise ValueError(
+                    f"Invalid condition right_type: "
+                    f"{condition.right_type}"
+                )
+
+        return condition
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\runtime\runtime.py
+==================================================
+from rulesets.registry import RulesetRegistry
+
+from rulesets.executor import RulesetExecutor
+
+from runtime.builder import RuntimeBuilder
+
+
+
+class FirewallRuntime:
+
+
+    def __init__(
+        self,
+        configuration,
+        rule_evaluator
+    ):
+
+        self.configuration = configuration
+
+        self.builder = RuntimeBuilder()
+
+
+        self.registry = RulesetRegistry()
+
+
+        runtime_rulesets = self.builder.build_rulesets(
+
+            configuration
+
+        )
+
+
+        for ruleset in runtime_rulesets:
+
+            self.registry.register(
+
+                ruleset
+
+            )
+
+
+        self.executor = RulesetExecutor(
+
+            rule_evaluator,
+
+            self.registry
+
+        )
+
+
+
+    def execute(
+        self,
+        ruleset_name,
+        context,
+        arguments=None
+    ):
+
+
+        ruleset = self.registry.get(
+
+            ruleset_name
+
+        )
+
+
+        return self.executor.execute(
+
+            ruleset,
+
+            context,
+
+            arguments
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\runtime\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\storage\json_storage.py
+==================================================
+import json
+
+from pathlib import Path
+
+
+
+class JsonStorage:
+
+
+    def __init__(
+        self,
+        folder="storage/versions"
+    ):
+
+        self.folder = Path(folder)
+
+        self.folder.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+
+
+    def save(
+        self,
+        name,
+        data
+    ):
+
+        file_path = self.folder / f"{name}.json"
+
+
+        with open(
+            file_path,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                data,
+                file,
+                indent=4
+            )
+
+
+        return file_path
+
+
+
+    def load(
+        self,
+        name
+    ):
+
+        file_path = self.folder / f"{name}.json"
+
+
+        if not file_path.exists():
+
+            raise ValueError(
+                "JSON file not found"
+            )
+
+
+        with open(
+            file_path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            return json.load(
+                file
+            )
+
+
+
+    def delete(
+        self,
+        name
+    ):
+
+        file_path = self.folder / f"{name}.json"
+
+
+        if file_path.exists():
+
+            file_path.unlink()
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\storage\__init__.py
+==================================================
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\system\message_loader.py
+==================================================
+from parameters import (
+    Parameter,
+    ParameterScope
+)
+
+
+
+class MessageParameterLoader:
+
+
+
+    def load(
+
+        self,
+
+        context,
+
+        message
+
+    ):
+
+
+        for name, value in message.items():
+
+
+            datatype = self.detect_type(value)
+
+
+            parameter = Parameter(
+
+                name=name,
+
+                value=value,
+
+                datatype=datatype,
+
+                scope=ParameterScope.SYSTEM
+
+            )
+
+
+            context.parameters.set(
+
+                parameter
+
+            )
+
+
+
+    def detect_type(
+
+        self,
+
+        value
+
+    ):
+
+
+        if isinstance(value, int):
+
+            return "Integer"
+
+
+        if isinstance(value, list):
+
+            return "Set"
+
+
+        return "String"
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\system\metadata.py
+==================================================
+import uuid
+import socket
+
+from datetime import datetime, timezone
+
+from parameters import ParameterScope
+
+
+
+class SystemMetadataLoader:
+
+
+    ENGINE_VERSION = "PXP-Engine-1.0"
+
+
+
+    def load(
+
+        self,
+
+        context
+
+    ):
+
+
+        timestamp = datetime.now(
+
+            timezone.utc
+
+        ).isoformat()
+
+
+
+        context.set_parameter(
+
+            "Message_UUID",
+
+            str(uuid.uuid4()),
+
+            datatype="String",
+
+            scope=ParameterScope.SYSTEM
+
+        )
+
+
+        context.set_parameter(
+
+            "Received_Timestamp",
+
+            timestamp,
+
+            datatype="Timestamp",
+
+            scope=ParameterScope.SYSTEM
+
+        )
+
+
+        context.set_parameter(
+
+            "Processing_Timestamp",
+
+            timestamp,
+
+            datatype="Timestamp",
+
+            scope=ParameterScope.SYSTEM
+
+        )
+
+
+        context.set_parameter(
+
+            "Engine_Version",
+
+            self.ENGINE_VERSION,
+
+            datatype="String",
+
+            scope=ParameterScope.SYSTEM
+
+        )
+
+
+        context.set_parameter(
+
+            "Processing_Node",
+
+            socket.gethostname(),
+
+            datatype="String",
+
+            scope=ParameterScope.SYSTEM
+
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\system\__init__.py
+==================================================
+from .message_loader import MessageParameterLoader
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\versions\version.py
+==================================================
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
+
+from configuration.models.firewall_config import (
+    FirewallConfiguration
+)
+
+
+@dataclass
+class Version:
+
+    number: int
+
+    configuration: FirewallConfiguration
+
+    id: UUID = field(
+        default_factory=uuid4
+    )
+
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    status: str = "AVAILABLE"
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\versions\version_repository.py
+==================================================
+from uuid import UUID
+
+
+class VersionRepository:
+
+    def __init__(
+        self
+    ):
+
+        self.versions = []
+
+    def save(
+        self,
+        version
+    ):
+
+        existing = self.get(
+            version.id
+        )
+
+        if existing is not None:
+
+            index = self.versions.index(
+                existing
+            )
+
+            self.versions[index] = version
+
+        else:
+
+            self.versions.append(
+                version
+            )
+
+        return version
+
+    def list(
+        self
+    ):
+
+        return list(
+            self.versions
+        )
+
+    def get(
+        self,
+        version_id
+    ):
+
+        if isinstance(
+            version_id,
+            str
+        ):
+
+            try:
+
+                version_id = UUID(
+                    version_id
+                )
+
+            except ValueError:
+
+                return None
+
+        for version in self.versions:
+
+            if version.id == version_id:
+
+                return version
+
+        return None
+
+    def clear(
+        self
+    ):
+
+        self.versions.clear()
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\versions\version_service.py
+==================================================
+import copy
+
+from uuid import UUID
+from datetime import datetime, timezone
+
+from versions.version import Version
+
+from configuration.serializers.firewall_configuration_serializer import (
+    FirewallConfigurationSerializer
+)
+
+from configuration.serializers.firewall_configuration_deserializer import (
+    FirewallConfigurationDeserializer
+)
+
+from storage.json_storage import JsonStorage
+
+
+class VersionService:
+
+    def __init__(
+        self,
+        repository,
+        serializer=None,
+        deserializer=None,
+        storage=None
+    ):
+
+        self.repository = repository
+
+        self.serializer = (
+            serializer
+            or FirewallConfigurationSerializer()
+        )
+
+        self.deserializer = (
+            deserializer
+            or FirewallConfigurationDeserializer()
+        )
+
+        self.storage = (
+            storage
+            or JsonStorage()
+        )
+
+        self._load_versions()
+
+    def _load_versions(
+        self
+    ):
+
+        self.repository.clear()
+
+        number = 1
+
+        while True:
+
+            try:
+
+                data = self.storage.load(
+                    f"version_{number}"
+                )
+
+            except ValueError:
+
+                break
+
+            configuration_data = data.get(
+                "configuration",
+                {
+                    "rulesets": []
+                }
+            )
+
+            configuration = self.deserializer.deserialize(
+                configuration_data
+            )
+
+            version_id = data.get(
+                "id"
+            )
+
+            if version_id:
+
+                version_uuid = UUID(
+                    version_id
+                )
+
+            else:
+
+                version_uuid = None
+
+            created_at_value = data.get(
+                "created_at"
+            )
+
+            if created_at_value:
+
+                created_at = datetime.fromisoformat(
+                    created_at_value
+                )
+
+            else:
+
+                created_at = datetime.now(
+                    timezone.utc
+                )
+
+            version = Version(
+
+                number=data.get(
+                    "version",
+                    number
+                ),
+
+                configuration=configuration,
+
+                **(
+                    {
+                        "id": version_uuid
+                    }
+                    if version_uuid
+                    else {}
+                ),
+
+                created_at=created_at,
+
+                status=data.get(
+                    "status",
+                    "AVAILABLE"
+                )
+
+            )
+
+            self.repository.save(
+                version
+            )
+
+            number += 1
+
+    def create_version(
+        self,
+        configuration
+    ):
+
+        versions = self.repository.list()
+
+        number = (
+
+            max(
+                (
+                    version.number
+                    for version in versions
+                ),
+                default=0
+            )
+
+            + 1
+
+        )
+
+        configuration_copy = copy.deepcopy(
+            configuration
+        )
+
+        version = Version(
+
+            number=number,
+
+            configuration=configuration_copy
+
+        )
+
+        self._save_version(
+            version
+        )
+
+        return version
+
+    def list_versions(
+        self
+    ):
+
+        return self.repository.list()
+
+    def get_version(
+        self,
+        version_id
+    ):
+
+        return self.repository.get(
+            version_id
+        )
+
+    def switch_version(
+        self,
+        version_id
+    ):
+
+        version = self.repository.get(
+            version_id
+        )
+
+        if version is None:
+
+            raise ValueError(
+                "Version not found"
+            )
+
+        versions = self.repository.list()
+
+        for item in versions:
+
+            item.status = "AVAILABLE"
+
+            self._save_version(
+                item
+            )
+
+        version.status = "ACTIVE"
+
+        self._save_version(
+            version
+        )
+
+        return version
+
+    def push_version(
+        self,
+        version_id
+    ):
+
+        version = self.repository.get(
+            version_id
+        )
+
+        if version is None:
+
+            raise ValueError(
+                "Version not found"
+            )
+
+        version.status = "ACTIVE"
+
+        self._save_version(
+            version
+        )
+
+        return version
+
+    def export_version(
+        self,
+        version_id
+    ):
+
+        version = self.repository.get(
+            version_id
+        )
+
+        if version is None:
+
+            raise ValueError(
+                "Version not found"
+            )
+
+        return self.serializer.export(
+            version.configuration
+        )
+
+    def _save_version(
+        self,
+        version
+    ):
+
+        self.storage.save(
+
+            f"version_{version.number}",
+
+            {
+
+                "id": str(
+                    version.id
+                ),
+
+                "version": version.number,
+
+                "created_at": version.created_at.isoformat(),
+
+                "status": version.status,
+
+                "configuration": self.serializer.serialize(
+                    version.configuration
+                )
+
+            }
+
+        )
+
+        self.repository.save(
+            version
+        )
+
+==================================================
+C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\versions\__init__.py
+==================================================

@@ -1,0 +1,38 @@
+{
+    "id": "445bda58-3663-4300-a54b-f0c59b5d9e82",
+    "version": 2,
+    "name": "Web Traffic Version",
+    "description": null,
+    "parent_version_id": null,
+    "created_at": "2026-10-18T23:06:56.703556+00:00",
+    "status": "AVAILABLE",
+    "configuration": {
+        "rulesets": [
+            {
+                "id": "893cd579-0632-46ac-af2a-c621fade396c",
+                "name": "Web Security",
+                "arguments": [],
+                "rules": [
+                    {
+                        "id": "6454dd4a-fc12-496f-8d75-33306811bd1f",
+                        "name": "Allow Web Traffic",
+                        "order": 1,
+                        "condition_group": null,
+                        "operations": [
+                            {
+                                "id": "31d1aca0-f359-4278-97ce-fe552c606ae4",
+                                "name": "set-parameter",
+                                "parameters": {
+                                    "name": "risk",
+                                    "value": 10,
+                                    "scope": "REQUEST"
+                                }
+                            }
+                        ],
+                        "action": null
+                    }
+                ]
+            }
+        ]
+    }
+}

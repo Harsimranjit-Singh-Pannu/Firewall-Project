@@ -1,0 +1,379 @@
+﻿
+===== C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\lists\list_column.py =====
+class ListColumn:
+
+    SUPPORTED_DATATYPES = {
+        "String",
+        "Integer",
+        "Boolean",
+        "Regex",
+        "IPAddress"
+    }
+
+    def __init__(
+        self,
+        name,
+        datatype,
+        unique=False,
+        optional=False
+    ):
+
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                "Column name must be a non-empty string"
+            )
+
+        if datatype not in self.SUPPORTED_DATATYPES:
+            raise ValueError(
+                f"Unsupported column datatype: {datatype}"
+            )
+
+        self.name = name
+        self.datatype = datatype
+        self.unique = bool(unique)
+        self.optional = bool(optional)
+
+    def to_dict(self):
+
+        return {
+            "name": self.name,
+            "datatype": self.datatype,
+            "unique": self.unique,
+            "optional": self.optional
+        }
+
+===== C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\lists\list_definition.py =====
+from lists.list_column import ListColumn
+
+
+class ListDefinition:
+
+    def __init__(
+        self,
+        list_number,
+        name,
+        columns
+    ):
+
+        if not isinstance(list_number, int):
+            raise ValueError(
+                "list_number must be an integer"
+            )
+
+        if list_number < 1:
+            raise ValueError(
+                "list_number must be greater than zero"
+            )
+
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                "List name must be a non-empty string"
+            )
+
+        if not isinstance(columns, list):
+            raise ValueError(
+                "columns must be a list"
+            )
+
+        if not columns:
+            raise ValueError(
+                "A list must have at least one column"
+            )
+
+        for column in columns:
+
+            if not isinstance(
+                column,
+                ListColumn
+            ):
+                raise TypeError(
+                    "columns must contain ListColumn objects"
+                )
+
+        column_names = [
+            column.name
+            for column in columns
+        ]
+
+        if len(column_names) != len(set(column_names)):
+            raise ValueError(
+                "Column names must be unique"
+            )
+
+        self.list_number = list_number
+        self.name = name
+        self.columns = tuple(columns)
+
+    @property
+    def alias(self):
+
+        return (
+            f"LMS_"
+            f"{self.list_number}_"
+            f"{self.name}"
+        )
+
+    def get_column(
+        self,
+        name
+    ):
+
+        for column in self.columns:
+
+            if column.name == name:
+                return column
+
+        return None
+
+    def to_dict(self):
+
+        return {
+            "list_number": self.list_number,
+            "name": self.name,
+            "alias": self.alias,
+            "columns": [
+                column.to_dict()
+                for column in self.columns
+            ]
+        }
+
+===== C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\lists\list_manager.py =====
+from lists.list_definition import ListDefinition
+from lists.list_repository import ListRepository
+
+
+class ListManager:
+
+    def __init__(
+        self,
+        repository=None
+    ):
+
+        self.repository = (
+            repository
+            if repository is not None
+            else ListRepository()
+        )
+
+        self._next_list_number = 1
+
+    # ============================================================
+    # Create List
+    # ============================================================
+
+    def create_list(
+        self,
+        name,
+        columns,
+        rows=None
+    ):
+
+        if rows is None:
+            rows = []
+
+        list_definition = ListDefinition(
+
+            list_number=self._next_list_number,
+
+            name=name,
+
+            columns=columns
+
+        )
+
+        self._validate_rows(
+            list_definition,
+            rows
+        )
+
+        self.repository.save(
+            list_definition,
+            rows
+        )
+
+        self._next_list_number += 1
+
+        return list_definition
+
+    # ============================================================
+    # Get List
+    # ============================================================
+
+    def get_list(
+        self,
+        alias
+    ):
+
+        entry = self.repository.get(
+            alias
+        )
+
+        if entry is None:
+            raise ValueError(
+                f"List not found: {alias}"
+            )
+
+        return entry["definition"]
+
+    # ============================================================
+    # Get Rows
+    # ============================================================
+
+    def get_rows(
+        self,
+        alias
+    ):
+
+        rows = self.repository.get_rows(
+            alias
+        )
+
+        if rows is None:
+            raise ValueError(
+                f"List not found: {alias}"
+            )
+
+        return rows
+
+    # ============================================================
+    # Validation
+    # ============================================================
+
+    def _validate_rows(
+        self,
+        list_definition,
+        rows
+    ):
+
+        if not isinstance(rows, list):
+            raise ValueError(
+                "rows must be a list"
+            )
+
+        column_names = {
+            column.name
+            for column in list_definition.columns
+        }
+
+        for row in rows:
+
+            if not isinstance(row, dict):
+                raise TypeError(
+                    "Each row must be a dictionary"
+                )
+
+            unknown_columns = (
+                set(row.keys())
+                - column_names
+            )
+
+            if unknown_columns:
+
+                raise ValueError(
+                    "Row contains unknown columns: "
+                    + ", ".join(
+                        sorted(unknown_columns)
+                    )
+                )
+
+            for column in list_definition.columns:
+
+                if (
+                    not column.optional
+                    and column.name not in row
+                ):
+
+                    raise ValueError(
+                        f"Missing required column: "
+                        f"{column.name}"
+                    )
+
+        self._validate_unique_columns(
+            list_definition,
+            rows
+        )
+
+    def _validate_unique_columns(
+        self,
+        list_definition,
+        rows
+    ):
+
+        for column in list_definition.columns:
+
+            if not column.unique:
+                continue
+
+            seen = set()
+
+            for row in rows:
+
+                if column.name not in row:
+                    continue
+
+                value = row[
+                    column.name
+                ]
+
+                if value in seen:
+
+                    raise ValueError(
+                        f"Duplicate value for unique "
+                        f"column: {column.name}"
+                    )
+
+                seen.add(value)
+
+===== C:\Users\simran\Desktop\Coding projects\Firewall-Project\src\lists\list_repository.py =====
+class ListRepository:
+
+    def __init__(self):
+
+        self._lists = {}
+
+    def save(
+        self,
+        list_definition,
+        rows
+    ):
+
+        self._lists[
+            list_definition.alias
+        ] = {
+            "definition": list_definition,
+            "rows": [
+                dict(row)
+                for row in rows
+            ]
+        }
+
+    def get(
+        self,
+        alias
+    ):
+
+        return self._lists.get(
+            alias
+        )
+
+    def exists(
+        self,
+        alias
+    ):
+
+        return alias in self._lists
+
+    def get_rows(
+        self,
+        alias
+    ):
+
+        entry = self.get(alias)
+
+        if entry is None:
+            return None
+
+        return [
+            dict(row)
+            for row in entry["rows"]
+        ]

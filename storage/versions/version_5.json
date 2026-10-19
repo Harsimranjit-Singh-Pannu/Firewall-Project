@@ -1,0 +1,12 @@
+{
+    "id": "cb128cf1-f5f6-42f2-b311-a3577dea1e28",
+    "version": 5,
+    "name": "Base Version",
+    "description": null,
+    "parent_version_id": null,
+    "created_at": "2026-10-18T23:40:20.646810+00:00",
+    "status": "AVAILABLE",
+    "configuration": {
+        "rulesets": []
+    }
+}

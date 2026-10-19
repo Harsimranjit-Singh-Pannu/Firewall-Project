@@ -1,0 +1,1099 @@
+{
+    "LMS_1_sender_rules": {
+        "definition": {
+            "list_number": 1,
+            "name": "sender_rules",
+            "alias": "LMS_1_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            },
+            {
+                "sender": "99999",
+                "regex_pattern": "^TEST.*",
+                "action": "BLOCK"
+            }
+        ]
+    },
+    "LMS_1_boolean_test": {
+        "definition": {
+            "list_number": 1,
+            "name": "boolean_test",
+            "alias": "LMS_1_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_2_sender_rules": {
+        "definition": {
+            "list_number": 2,
+            "name": "sender_rules",
+            "alias": "LMS_2_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_3_sender_rules": {
+        "definition": {
+            "list_number": 3,
+            "name": "sender_rules",
+            "alias": "LMS_3_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_4_sender_rules": {
+        "definition": {
+            "list_number": 4,
+            "name": "sender_rules",
+            "alias": "LMS_4_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_5_sender_rules": {
+        "definition": {
+            "list_number": 5,
+            "name": "sender_rules",
+            "alias": "LMS_5_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_6_sender_rules": {
+        "definition": {
+            "list_number": 6,
+            "name": "sender_rules",
+            "alias": "LMS_6_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_7_sender_rules": {
+        "definition": {
+            "list_number": 7,
+            "name": "sender_rules",
+            "alias": "LMS_7_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_8_sender_rules": {
+        "definition": {
+            "list_number": 8,
+            "name": "sender_rules",
+            "alias": "LMS_8_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_9_sender_rules": {
+        "definition": {
+            "list_number": 9,
+            "name": "sender_rules",
+            "alias": "LMS_9_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_10_sender_rules": {
+        "definition": {
+            "list_number": 10,
+            "name": "sender_rules",
+            "alias": "LMS_10_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_11_sender_rules": {
+        "definition": {
+            "list_number": 11,
+            "name": "sender_rules",
+            "alias": "LMS_11_sender_rules",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "regex_pattern",
+                    "datatype": "Regex",
+                    "unique": false,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "sender": "12344",
+                "regex_pattern": "^SPAM.*",
+                "action": "BLOCK"
+            },
+            {
+                "sender": "56789",
+                "regex_pattern": "^HELLO.*",
+                "action": "ALLOW"
+            }
+        ]
+    },
+    "LMS_12_boolean_test": {
+        "definition": {
+            "list_number": 12,
+            "name": "boolean_test",
+            "alias": "LMS_12_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_13_boolean_test": {
+        "definition": {
+            "list_number": 13,
+            "name": "boolean_test",
+            "alias": "LMS_13_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_14_boolean_test": {
+        "definition": {
+            "list_number": 14,
+            "name": "boolean_test",
+            "alias": "LMS_14_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ]
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_15_boolean_test": {
+        "definition": {
+            "list_number": 15,
+            "name": "boolean_test",
+            "alias": "LMS_15_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 0.8
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_16_boolean_test": {
+        "definition": {
+            "list_number": 16,
+            "name": "boolean_test",
+            "alias": "LMS_16_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_17_boolean_test": {
+        "definition": {
+            "list_number": 17,
+            "name": "boolean_test",
+            "alias": "LMS_17_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_18_boolean_test": {
+        "definition": {
+            "list_number": 18,
+            "name": "boolean_test",
+            "alias": "LMS_18_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_19_boolean_test": {
+        "definition": {
+            "list_number": 19,
+            "name": "boolean_test",
+            "alias": "LMS_19_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_20_boolean_test": {
+        "definition": {
+            "list_number": 20,
+            "name": "boolean_test",
+            "alias": "LMS_20_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_21_boolean_test": {
+        "definition": {
+            "list_number": 21,
+            "name": "boolean_test",
+            "alias": "LMS_21_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_22_boolean_test": {
+        "definition": {
+            "list_number": 22,
+            "name": "boolean_test",
+            "alias": "LMS_22_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_23_boolean_test": {
+        "definition": {
+            "list_number": 23,
+            "name": "boolean_test",
+            "alias": "LMS_23_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_24_boolean_test": {
+        "definition": {
+            "list_number": 24,
+            "name": "boolean_test",
+            "alias": "LMS_24_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_25_boolean_test": {
+        "definition": {
+            "list_number": 25,
+            "name": "boolean_test",
+            "alias": "LMS_25_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_26_boolean_test": {
+        "definition": {
+            "list_number": 26,
+            "name": "boolean_test",
+            "alias": "LMS_26_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_27_boolean_test": {
+        "definition": {
+            "list_number": 27,
+            "name": "boolean_test",
+            "alias": "LMS_27_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_28_boolean_test": {
+        "definition": {
+            "list_number": 28,
+            "name": "boolean_test",
+            "alias": "LMS_28_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_29_boolean_test": {
+        "definition": {
+            "list_number": 29,
+            "name": "boolean_test",
+            "alias": "LMS_29_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_30_boolean_test": {
+        "definition": {
+            "list_number": 30,
+            "name": "boolean_test",
+            "alias": "LMS_30_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_31_boolean_test": {
+        "definition": {
+            "list_number": 31,
+            "name": "boolean_test",
+            "alias": "LMS_31_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_32_boolean_test": {
+        "definition": {
+            "list_number": 32,
+            "name": "boolean_test",
+            "alias": "LMS_32_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_33_boolean_test": {
+        "definition": {
+            "list_number": 33,
+            "name": "boolean_test",
+            "alias": "LMS_33_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_34_boolean_test": {
+        "definition": {
+            "list_number": 34,
+            "name": "boolean_test",
+            "alias": "LMS_34_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_35_boolean_test": {
+        "definition": {
+            "list_number": 35,
+            "name": "boolean_test",
+            "alias": "LMS_35_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_36_boolean_test": {
+        "definition": {
+            "list_number": 36,
+            "name": "boolean_test",
+            "alias": "LMS_36_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_37_boolean_test": {
+        "definition": {
+            "list_number": 37,
+            "name": "boolean_test",
+            "alias": "LMS_37_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_38_boolean_test": {
+        "definition": {
+            "list_number": 38,
+            "name": "boolean_test",
+            "alias": "LMS_38_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    }
+}
