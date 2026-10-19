@@ -1,12 +1,44 @@
 {
-    "id": "60b9fc13-8e72-4eba-b5d9-25c52eb86271",
+    "id": "8266f475-6003-4437-bf39-1b771bb56f6c",
     "version": 3,
-    "name": "Base Version",
-    "description": null,
+    "name": "List Lookup Integration 20261018_205935_221643",
+    "description": "Persistent integration test with a real list and rule",
     "parent_version_id": null,
-    "created_at": "2026-10-18T23:10:41.856659+00:00",
+    "created_at": "2026-10-19T00:59:35.240168+00:00",
     "status": "AVAILABLE",
     "configuration": {
-        "rulesets": []
+        "rulesets": [
+            {
+                "id": "d04707c8-eaa2-480e-bdfb-63ec77313542",
+                "name": "Integration Security",
+                "arguments": [],
+                "rules": [
+                    {
+                        "id": "fbaac916-da26-4588-9517-01be78656d3d",
+                        "name": "Block Known Sender",
+                        "order": 1,
+                        "condition_group": null,
+                        "operations": [
+                            {
+                                "id": "c705dcfb-7338-4f70-9d81-f6db19101e42",
+                                "name": "list-lookup",
+                                "parameters": {
+                                    "list_alias": "LMS_44_lookup_integration_20261018_205935_221643",
+                                    "conditions": [
+                                        {
+                                            "column": "sender",
+                                            "operator": "Equals",
+                                            "value": "integration-test@example.com"
+                                        }
+                                    ],
+                                    "result_parameter": "integration_sender_result"
+                                }
+                            }
+                        ],
+                        "action": null
+                    }
+                ]
+            }
+        ]
     }
 }

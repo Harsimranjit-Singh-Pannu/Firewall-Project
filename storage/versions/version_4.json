@@ -1,35 +1,43 @@
 {
-    "id": "1e208570-5469-43ea-8986-f73a181a8b86",
+    "id": "40fb1381-e29e-4895-b079-7288b380fd5b",
     "version": 4,
-    "name": "Web Traffic Version",
-    "description": null,
+    "name": "Message Receiving Foundation",
+    "description": "Initial persistent ruleset for consuming message reception system parameters",
     "parent_version_id": null,
-    "created_at": "2026-10-18T23:10:41.860904+00:00",
+    "created_at": "2026-10-19T03:16:13.645957+00:00",
     "status": "AVAILABLE",
     "configuration": {
         "rulesets": [
             {
-                "id": "19a8966a-3df6-45de-8c11-f176239fbc5c",
-                "name": "Web Security",
+                "id": "f9b221a7-f0ce-42a1-b28a-82be725de569",
+                "name": "Message Receiving",
                 "arguments": [],
                 "rules": [
                     {
-                        "id": "a5980b54-dd2a-4972-95d9-adb69004eaf0",
-                        "name": "Allow Web Traffic",
+                        "id": "0694208e-eca7-41bf-96f2-620da264435a",
+                        "name": "Check received message sender",
                         "order": 1,
-                        "condition_group": null,
-                        "operations": [
-                            {
-                                "id": "e4432fab-5423-4861-bec7-123705549925",
-                                "name": "set-parameter",
-                                "parameters": {
-                                    "name": "risk",
-                                    "value": 10,
-                                    "scope": "REQUEST"
+                        "condition_group": {
+                            "id": "50fe07e3-5076-403e-a061-6d7bb56735d5",
+                            "operator": "AND",
+                            "conditions": [
+                                {
+                                    "id": "a184309d-31ae-4b4e-86fd-ecc0869d3f1b",
+                                    "left_type": "Parameter",
+                                    "left_name": "Message-Sender",
+                                    "operator": "Exists",
+                                    "match_mode": "Any",
+                                    "right_type": null,
+                                    "right_value": null
                                 }
-                            }
-                        ],
-                        "action": null
+                            ]
+                        },
+                        "operations": [],
+                        "action": {
+                            "id": "6eb34450-6e87-4eec-ad9a-86b1ef1869ff",
+                            "type": "CONTINUE",
+                            "parameters": {}
+                        }
                     }
                 ]
             }

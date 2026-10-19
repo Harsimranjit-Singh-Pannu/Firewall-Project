@@ -1,48 +1,53 @@
 
 from operations.parameter.set_parameter import (
-    SetParameterOperation
+    SetParameterOperation,
 )
 
 from operations.manipulation.arithmetic import (
     ArithmeticOperator,
-    execute as arithmetic_execute
+    execute as arithmetic_execute,
 )
 
 from operations.manipulation.concatenate import (
-    execute as concatenate_execute
+    execute as concatenate_execute,
 )
 
 from operations.manipulation.convert_integer import (
-    execute as convert_integer_execute
+    execute as convert_integer_execute,
 )
 
 from operations.manipulation.convert_string import (
-    execute as convert_string_execute
+    execute as convert_string_execute,
 )
 
 from operations.manipulation.regex_replace import (
     match as regex_match,
-    replace as regex_replace
+    replace as regex_replace,
 )
 
 from operations.decode.base64_decode import (
-    execute as base64_decode_execute
+    execute as base64_decode_execute,
 )
 
 from operations.decode.hex_decode import (
-    execute as hex_decode_execute
+    execute as hex_decode_execute,
 )
 
 from operations.encode.base64_encode import (
-    execute as base64_encode_execute
+    execute as base64_encode_execute,
 )
 
 from operations.lookup.list_lookup import (
-    execute as list_lookup_execute
+    execute as list_lookup_execute,
+)
+
+from operations.parameter.extract_metadata import (
+    ExtractMetadataOperation,
 )
 
 
 class OperationExecutor:
+    """Dispatch and execute firewall operations."""
 
     def __init__(self, list_manager=None):
         self.list_manager = list_manager
@@ -59,26 +64,64 @@ class OperationExecutor:
             "hex-decode": self._execute_hex_decode,
             "base64-encode": self._execute_base64_encode,
             "list-lookup": self._execute_list_lookup,
+            "extract-message-metadata": self._execute_extract_metadata,
         }
 
-    def execute(self, operation, context):
+    # ---------------------------------------------------------
+    # Operation dispatch
+    # ---------------------------------------------------------
+
+    def execute(self, operation, context, arguments=None):
         if operation is None:
             return False
 
-        handler = self.operations.get(operation.name)
+        operation_name = getattr(operation, "name", None)
+
+        handler = self.operations.get(operation_name)
 
         if handler is None:
             raise ValueError(
-                f"Unsupported operation: {operation.name}"
+                f"Unsupported operation: {operation_name}"
             )
 
-        return handler(context, operation.parameters)
+        parameters = getattr(operation, "parameters", None)
+
+        return handler(
+            context,
+            parameters,
+            arguments=arguments,
+        )
+
+    # ---------------------------------------------------------
+    # Extract Message Metadata
+    # ---------------------------------------------------------
+
+    def _execute_extract_metadata(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
+        if context is None:
+            raise ValueError(
+                "extract-message-metadata requires an execution context"
+            )
+
+        return ExtractMetadataOperation().execute(
+            context,
+            parameters,
+        )
 
     # ---------------------------------------------------------
     # Set Parameter
     # ---------------------------------------------------------
 
-    def _execute_set_parameter(self, context, parameters):
+    def _execute_set_parameter(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         if context is None:
             raise ValueError(
                 "set-parameter requires an execution context"
@@ -86,18 +129,24 @@ class OperationExecutor:
 
         return SetParameterOperation().execute(
             context,
-            parameters
+            parameters,
+            arguments=arguments,
         )
 
     # ---------------------------------------------------------
     # Arithmetic
     # ---------------------------------------------------------
 
-    def _execute_arithmetic(self, context, parameters):
+    def _execute_arithmetic(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
             parameters,
             ["operands", "operator", "result_parameter"],
-            "arithmetic"
+            "arithmetic",
         )
 
         if context is None:
@@ -118,7 +167,7 @@ class OperationExecutor:
                 operator = ArithmeticOperator(operator)
             except ValueError as exc:
                 raise ValueError(
-                    f"Unsupported arithmetic operator: "
+                    "Unsupported arithmetic operator: "
                     f"{parameters['operator']}"
                 ) from exc
 
@@ -134,13 +183,14 @@ class OperationExecutor:
                 raise ValueError(
                     "Arithmetic result must be an integer"
                 )
+
             result = int(result)
 
         context.set_parameter(
             name=parameters["result_parameter"],
             value=result,
             datatype="Integer",
-            scope=parameters.get("scope", "Local")
+            scope=parameters.get("scope", "Local"),
         )
 
         return result
@@ -149,108 +199,176 @@ class OperationExecutor:
     # Concatenate
     # ---------------------------------------------------------
 
-    def _execute_concatenate(self, context, parameters):
+    def _execute_concatenate(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["values"], "concatenate"
+            parameters,
+            ["values"],
+            "concatenate",
         )
 
         return concatenate_execute(
             parameters["values"],
-            parameters.get("separator", "")
+            parameters.get("separator", ""),
         )
 
     # ---------------------------------------------------------
     # Convert Integer
     # ---------------------------------------------------------
 
-    def _execute_convert_integer(self, context, parameters):
+    def _execute_convert_integer(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value"], "convert-integer"
+            parameters,
+            ["value"],
+            "convert-integer",
         )
 
-        return convert_integer_execute(parameters["value"])
+        return convert_integer_execute(
+            parameters["value"]
+        )
 
     # ---------------------------------------------------------
     # Convert String
     # ---------------------------------------------------------
 
-    def _execute_convert_string(self, context, parameters):
+    def _execute_convert_string(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value"], "convert-string"
+            parameters,
+            ["value"],
+            "convert-string",
         )
 
-        return convert_string_execute(parameters["value"])
+        return convert_string_execute(
+            parameters["value"]
+        )
 
     # ---------------------------------------------------------
     # Regex Match
     # ---------------------------------------------------------
 
-    def _execute_regex_match(self, context, parameters):
+    def _execute_regex_match(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value", "pattern"], "regex-match"
+            parameters,
+            ["value", "pattern"],
+            "regex-match",
         )
 
         return regex_match(
             parameters["value"],
-            parameters["pattern"]
+            parameters["pattern"],
         )
 
     # ---------------------------------------------------------
     # Regex Replace
     # ---------------------------------------------------------
 
-    def _execute_regex_replace(self, context, parameters):
+    def _execute_regex_replace(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
             parameters,
             ["value", "pattern", "replacement"],
-            "regex-replace"
+            "regex-replace",
         )
 
         return regex_replace(
             parameters["value"],
             parameters["pattern"],
-            parameters["replacement"]
+            parameters["replacement"],
         )
 
     # ---------------------------------------------------------
     # Base64 Decode
     # ---------------------------------------------------------
 
-    def _execute_base64_decode(self, context, parameters):
+    def _execute_base64_decode(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value"], "base64-decode"
+            parameters,
+            ["value"],
+            "base64-decode",
         )
 
-        return base64_decode_execute(parameters["value"])
+        return base64_decode_execute(
+            parameters["value"]
+        )
 
     # ---------------------------------------------------------
     # Hex Decode
     # ---------------------------------------------------------
 
-    def _execute_hex_decode(self, context, parameters):
+    def _execute_hex_decode(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value"], "hex-decode"
+            parameters,
+            ["value"],
+            "hex-decode",
         )
 
-        return hex_decode_execute(parameters["value"])
+        return hex_decode_execute(
+            parameters["value"]
+        )
 
     # ---------------------------------------------------------
     # Base64 Encode
     # ---------------------------------------------------------
 
-    def _execute_base64_encode(self, context, parameters):
+    def _execute_base64_encode(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
-            parameters, ["value"], "base64-encode"
+            parameters,
+            ["value"],
+            "base64-encode",
         )
 
-        return base64_encode_execute(parameters["value"])
+        return base64_encode_execute(
+            parameters["value"]
+        )
 
     # ---------------------------------------------------------
     # List Lookup
     # ---------------------------------------------------------
 
-    
-    def _execute_list_lookup(self, context, parameters):
+    def _execute_list_lookup(
+        self,
+        context,
+        parameters,
+        arguments=None,
+    ):
         self._require_parameters(
             parameters,
             [
@@ -258,7 +376,7 @@ class OperationExecutor:
                 "conditions",
                 "result_parameter",
             ],
-            "list-lookup"
+            "list-lookup",
         )
 
         if context is None:
@@ -266,23 +384,28 @@ class OperationExecutor:
                 "list-lookup requires an execution context"
             )
 
-        # Prefer the manager supplied to the executor.
+        # Prefer the manager explicitly supplied to this executor.
         # Otherwise, use the manager belonging to the context.
-        if self.list_manager is None:
-            if not hasattr(context, "list_manager"):
-                raise ValueError(
-                    "list-lookup requires a ListManager"
-                )
+        list_manager = self.list_manager
 
-            self.list_manager = context.list_manager
+        if list_manager is None:
+            list_manager = getattr(
+                context,
+                "list_manager",
+                None,
+            )
 
-        # The existing lookup implementation reads
-        # context.list_manager, so ensure both use the same manager.
-        context.list_manager = self.list_manager
+        if list_manager is None:
+            raise ValueError(
+                "list-lookup requires a ListManager"
+            )
+
+        # The lookup implementation reads context.list_manager.
+        context.list_manager = list_manager
 
         return list_lookup_execute(
             context,
-            parameters
+            parameters,
         )
 
     # ---------------------------------------------------------
@@ -290,14 +413,19 @@ class OperationExecutor:
     # ---------------------------------------------------------
 
     @staticmethod
-    def _require_parameters(parameters, required, operation_name):
+    def _require_parameters(
+        parameters,
+        required,
+        operation_name,
+    ):
         if not isinstance(parameters, dict):
             raise ValueError(
                 f"{operation_name} parameters must be a dictionary"
             )
 
         missing = [
-            name for name in required
+            name
+            for name in required
             if name not in parameters
         ]
 

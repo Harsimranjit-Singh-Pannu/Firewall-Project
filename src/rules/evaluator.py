@@ -63,7 +63,8 @@ class RuleEvaluator:
 
                 operation,
 
-                context
+                context,
+                arguments=arguments
 
             )
 

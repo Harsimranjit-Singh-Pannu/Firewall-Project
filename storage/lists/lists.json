@@ -1095,5 +1095,417 @@
                 "enabled": false
             }
         ]
+    },
+    "LMS_39_boolean_test": {
+        "definition": {
+            "list_number": 39,
+            "name": "boolean_test",
+            "alias": "LMS_39_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_40_boolean_test": {
+        "definition": {
+            "list_number": 40,
+            "name": "boolean_test",
+            "alias": "LMS_40_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_41_boolean_test": {
+        "definition": {
+            "list_number": 41,
+            "name": "boolean_test",
+            "alias": "LMS_41_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_42_boolean_test": {
+        "definition": {
+            "list_number": 42,
+            "name": "boolean_test",
+            "alias": "LMS_42_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_43_boolean_test": {
+        "definition": {
+            "list_number": 43,
+            "name": "boolean_test",
+            "alias": "LMS_43_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_44_lookup_integration_20261018_205935_221643": {
+        "definition": {
+            "list_number": 44,
+            "name": "lookup_integration_20261018_205935_221643",
+            "alias": "LMS_44_lookup_integration_20261018_205935_221643",
+            "columns": [
+                {
+                    "name": "sender",
+                    "datatype": "String",
+                    "unique": true,
+                    "optional": false
+                },
+                {
+                    "name": "action",
+                    "datatype": "String",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "sender": "integration-test@example.com",
+                "action": "BLOCK"
+            }
+        ]
+    },
+    "LMS_45_boolean_test": {
+        "definition": {
+            "list_number": 45,
+            "name": "boolean_test",
+            "alias": "LMS_45_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_46_boolean_test": {
+        "definition": {
+            "list_number": 46,
+            "name": "boolean_test",
+            "alias": "LMS_46_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_47_boolean_test": {
+        "definition": {
+            "list_number": 47,
+            "name": "boolean_test",
+            "alias": "LMS_47_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_48_boolean_test": {
+        "definition": {
+            "list_number": 48,
+            "name": "boolean_test",
+            "alias": "LMS_48_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_49_boolean_test": {
+        "definition": {
+            "list_number": 49,
+            "name": "boolean_test",
+            "alias": "LMS_49_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_50_boolean_test": {
+        "definition": {
+            "list_number": 50,
+            "name": "boolean_test",
+            "alias": "LMS_50_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_51_boolean_test": {
+        "definition": {
+            "list_number": 51,
+            "name": "boolean_test",
+            "alias": "LMS_51_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_52_boolean_test": {
+        "definition": {
+            "list_number": 52,
+            "name": "boolean_test",
+            "alias": "LMS_52_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_53_boolean_test": {
+        "definition": {
+            "list_number": 53,
+            "name": "boolean_test",
+            "alias": "LMS_53_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_54_boolean_test": {
+        "definition": {
+            "list_number": 54,
+            "name": "boolean_test",
+            "alias": "LMS_54_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
+    },
+    "LMS_55_boolean_test": {
+        "definition": {
+            "list_number": 55,
+            "name": "boolean_test",
+            "alias": "LMS_55_boolean_test",
+            "columns": [
+                {
+                    "name": "enabled",
+                    "datatype": "Boolean",
+                    "unique": false,
+                    "optional": false
+                }
+            ],
+            "minimum_similarity": 80.0
+        },
+        "rows": [
+            {
+                "enabled": true
+            },
+            {
+                "enabled": false
+            }
+        ]
     }
 }

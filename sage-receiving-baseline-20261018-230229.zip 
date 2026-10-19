@@ -1,0 +1,359 @@
+[1mdiff --git a/storage/versions/version_1.json b/storage/versions/version_1.json[m
+[1mindex a8db3f4..22f9279 100644[m
+[1m--- a/storage/versions/version_1.json[m
+[1m+++ b/storage/versions/version_1.json[m
+[36m@@ -1,10 +1,10 @@[m
+ {[m
+[31m-    "id": "3464c87b-ab0f-4e66-a2dd-bffe4f931c60",[m
+[32m+[m[32m    "id": "c6a76084-20e3-403c-a8bf-afa01b5e98fa",[m
+     "version": 1,[m
+[31m-    "name": "Base Version",[m
+[31m-    "description": null,[m
+[32m+[m[32m    "name": "Persistent Version Check",[m
+[32m+[m[32m    "description": "Verify real project storage",[m
+     "parent_version_id": null,[m
+[31m-    "created_at": "2026-10-18T23:06:56.695729+00:00",[m
+[32m+[m[32m    "created_at": "2026-10-19T00:48:27.246648+00:00",[m
+     "status": "AVAILABLE",[m
+     "configuration": {[m
+         "rulesets": [][m
+[1mdiff --git a/storage/versions/version_2.json b/storage/versions/version_2.json[m
+[1mindex 3961ce5..c21f18f 100644[m
+[1m--- a/storage/versions/version_2.json[m
+[1m+++ b/storage/versions/version_2.json[m
+[36m@@ -1,26 +1,40 @@[m
+ {[m
+[31m-    "id": "445bda58-3663-4300-a54b-f0c59b5d9e82",[m
+[32m+[m[32m    "id": "514b3141-278b-4ec6-8b5a-92614e1be642",[m
+     "version": 2,[m
+[31m-    "name": "Web Traffic Version",[m
+[31m-    "description": null,[m
+[32m+[m[32m    "name": "E2E Web Traffic Integration",[m
+[32m+[m[32m    "description": "Persistent end-to-end runtime verification",[m
+     "parent_version_id": null,[m
+[31m-    "created_at": "2026-10-18T23:06:56.703556+00:00",[m
+[32m+[m[32m    "created_at": "2026-10-19T00:51:00.035783+00:00",[m
+     "status": "AVAILABLE",[m
+     "configuration": {[m
+         "rulesets": [[m
+             {[m
+[31m-                "id": "893cd579-0632-46ac-af2a-c621fade396c",[m
+[31m-                "name": "Web Security",[m
+[32m+[m[32m                "id": "96428338-9e35-4ff7-ad40-a57456e37362",[m
+[32m+[m[32m                "name": "E2E Web Security",[m
+                 "arguments": [],[m
+                 "rules": [[m
+                     {[m
+[31m-                        "id": "6454dd4a-fc12-496f-8d75-33306811bd1f",[m
+[31m-                        "name": "Allow Web Traffic",[m
+[32m+[m[32m                        "id": "0348b7d1-99ad-4923-aae3-7451f233dac2",[m
+[32m+[m[32m                        "name": "E2E Allow Web Traffic",[m
+                         "order": 1,[m
+[31m-                        "condition_group": null,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "c1f3487c-2d9d-449e-8948-04a5a3671e1a",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "ffb10d05-31cc-4d33-b328-b9a54a37061c",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "sender_address",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+                         "operations": [[m
+                             {[m
+[31m-                                "id": "31d1aca0-f359-4278-97ce-fe552c606ae4",[m
+[32m+[m[32m                                "id": "c3f33107-9653-4434-b238-3eb54a51ec7e",[m
+                                 "name": "set-parameter",[m
+                                 "parameters": {[m
+                                     "name": "risk",[m
+[36m@@ -29,7 +43,11 @@[m
+                                 }[m
+                             }[m
+                         ],[m
+[31m-                        "action": null[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "d486ce04-12eb-404b-bc2d-e8c016b6d275",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+                     }[m
+                 ][m
+             }[m
+[1mdiff --git a/storage/versions/version_3.json b/storage/versions/version_3.json[m
+[1mindex 9f6fb9d..1de8d20 100644[m
+[1m--- a/storage/versions/version_3.json[m
+[1m+++ b/storage/versions/version_3.json[m
+[36m@@ -1,12 +1,44 @@[m
+ {[m
+[31m-    "id": "60b9fc13-8e72-4eba-b5d9-25c52eb86271",[m
+[32m+[m[32m    "id": "8266f475-6003-4437-bf39-1b771bb56f6c",[m
+     "version": 3,[m
+[31m-    "name": "Base Version",[m
+[31m-    "description": null,[m
+[32m+[m[32m    "name": "List Lookup Integration 20261018_205935_221643",[m
+[32m+[m[32m    "description": "Persistent integration test with a real list and rule",[m
+     "parent_version_id": null,[m
+[31m-    "created_at": "2026-10-18T23:10:41.856659+00:00",[m
+[32m+[m[32m    "created_at": "2026-10-19T00:59:35.240168+00:00",[m
+     "status": "AVAILABLE",[m
+     "configuration": {[m
+[31m-        "rulesets": [][m
+[32m+[m[32m        "rulesets": [[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": "d04707c8-eaa2-480e-bdfb-63ec77313542",[m
+[32m+[m[32m                "name": "Integration Security",[m
+[32m+[m[32m                "arguments": [],[m
+[32m+[m[32m                "rules": [[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "fbaac916-da26-4588-9517-01be78656d3d",[m
+[32m+[m[32m                        "name": "Block Known Sender",[m
+[32m+[m[32m                        "order": 1,[m
+[32m+[m[32m                        "condition_group": null,[m
+[32m+[m[32m                        "operations": [[m
+[32m+[m[32m                            {[m
+[32m+[m[32m                                "id": "c705dcfb-7338-4f70-9d81-f6db19101e42",[m
+[32m+[m[32m                                "name": "list-lookup",[m
+[32m+[m[32m                                "parameters": {[m
+[32m+[m[32m                                    "list_alias": "LMS_44_lookup_integration_20261018_205935_221643",[m
+[32m+[m[32m                                    "conditions": [[m
+[32m+[m[32m                                        {[m
+[32m+[m[32m                                            "column": "sender",[m
+[32m+[m[32m                                            "operator": "Equals",[m
+[32m+[m[32m                                            "value": "integration-test@example.com"[m
+[32m+[m[32m                                        }[m
+[32m+[m[32m                                    ],[m
+[32m+[m[32m                                    "result_parameter": "integration_sender_result"[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                        ],[m
+[32m+[m[32m                        "action": null[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                ][m
+[32m+[m[32m            }[m
+[32m+[m[32m        ][m
+     }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/storage/versions/version_4.json b/storage/versions/version_4.json[m
+[1mindex 335f7d8..6af5aa5 100644[m
+[1m--- a/storage/versions/version_4.json[m
+[1m+++ b/storage/versions/version_4.json[m
+[36m@@ -1,35 +1,43 @@[m
+ {[m
+[31m-    "id": "1e208570-5469-43ea-8986-f73a181a8b86",[m
+[32m+[m[32m    "id": "40fb1381-e29e-4895-b079-7288b380fd5b",[m
+     "version": 4,[m
+[31m-    "name": "Web Traffic Version",[m
+[31m-    "description": null,[m
+[32m+[m[32m    "name": "Message Receiving Foundation",[m
+[32m+[m[32m    "description": "Initial persistent ruleset for consuming message reception system parameters",[m
+     "parent_version_id": null,[m
+[31m-    "created_at": "2026-10-18T23:10:41.860904+00:00",[m
+[32m+[m[32m    "created_at": "2026-10-19T03:16:13.645957+00:00",[m
+     "status": "AVAILABLE",[m
+     "configuration": {[m
+         "rulesets": [[m
+             {[m
+[31m-                "id": "19a8966a-3df6-45de-8c11-f176239fbc5c",[m
+[31m-                "name": "Web Security",[m
+[32m+[m[32m                "id": "f9b221a7-f0ce-42a1-b28a-82be725de569",[m
+[32m+[m[32m                "name": "Message Receiving",[m
+                 "arguments": [],[m
+                 "rules": [[m
+                     {[m
+[31m-                        "id": "a5980b54-dd2a-4972-95d9-adb69004eaf0",[m
+[31m-                        "name": "Allow Web Traffic",[m
+[32m+[m[32m                        "id": "0694208e-eca7-41bf-96f2-620da264435a",[m
+[32m+[m[32m                        "name": "Check received message sender",[m
+                         "order": 1,[m
+[31m-                        "condition_group": null,[m
+[31m-                        "operations": [[m
+[31m-                            {[m
+[31m-                                "id": "e4432fab-5423-4861-bec7-123705549925",[m
+[31m-                                "name": "set-parameter",[m
+[31m-                                "parameters": {[m
+[31m-                                    "name": "risk",[m
+[31m-                                    "value": 10,[m
+[31m-                                    "scope": "REQUEST"[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "50fe07e3-5076-403e-a061-6d7bb56735d5",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "a184309d-31ae-4b4e-86fd-ecc0869d3f1b",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Sender",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+                                 }[m
+[31m-                            }[m
+[31m-                        ],[m
+[31m-                        "action": null[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        "operations": [],[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "6eb34450-6e87-4eec-ad9a-86b1ef1869ff",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+                     }[m
+                 ][m
+             }[m
+[1mdiff --git a/storage/versions/version_5.json b/storage/versions/version_5.json[m
+[1mindex 19fc515..aecaf19 100644[m
+[1m--- a/storage/versions/version_5.json[m
+[1m+++ b/storage/versions/version_5.json[m
+[36m@@ -1,12 +1,150 @@[m
+ {[m
+[31m-    "id": "cb128cf1-f5f6-42f2-b311-a3577dea1e28",[m
+[32m+[m[32m    "id": "80ffd2ad-029a-4af9-a201-4689cc62bd66",[m
+     "version": 5,[m
+[31m-    "name": "Base Version",[m
+[31m-    "description": null,[m
+[32m+[m[32m    "name": "Message Parameter Integration",[m
+[32m+[m[32m    "description": "Persisted rules verifying all five message reception system parameters",[m
+     "parent_version_id": null,[m
+[31m-    "created_at": "2026-10-18T23:40:20.646810+00:00",[m
+[32m+[m[32m    "created_at": "2026-10-19T03:23:16.212808+00:00",[m
+     "status": "AVAILABLE",[m
+     "configuration": {[m
+[31m-        "rulesets": [][m
+[32m+[m[32m        "rulesets": [[m
+[32m+[m[32m            {[m
+[32m+[m[32m                "id": "15419d45-abc7-49c0-9c9a-1f83f35b08a1",[m
+[32m+[m[32m                "name": "Message Parameter Checks",[m
+[32m+[m[32m                "arguments": [],[m
+[32m+[m[32m                "rules": [[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "df2a1339-9f3a-4cb5-a0c1-16d795d99738",[m
+[32m+[m[32m                        "name": "Check Message-Id",[m
+[32m+[m[32m                        "order": 1,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "615d9c06-60ea-4559-82d8-fa9a8b9d2e90",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "8a5c8cec-d460-4f1a-83ef-2e934a4c8f55",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Id",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        "operations": [],[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "39ae0767-4ccd-465d-953e-09fa0ea42a02",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "c7d9acf8-3f6a-4984-96af-7aa71a8c6904",[m
+[32m+[m[32m                        "name": "Check Message-Sender",[m
+[32m+[m[32m                        "order": 2,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "4fc4029c-bab6-4423-a9d3-70a397718e15",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "847d5ade-bb3a-4cf8-8629-ed4f2a8d646e",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Sender",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        "operations": [],[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "a8ce9a50-2127-44dc-9320-9b390bb843da",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "81ef0792-80a6-420d-bc01-7ba5fd3360b8",[m
+[32m+[m[32m                        "name": "Check Message-Recipient",[m
+[32m+[m[32m                        "order": 3,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "7ef17957-0c53-438f-b67c-1243ec0d04b9",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "25f11d72-6cab-4b9f-8048-32cf239762fa",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Recipient",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        "operations": [],[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "11eb05eb-d595-4341-bbac-455362407b85",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "ba6149a8-8310-4372-bb46-03e1db63be40",[m
+[32m+[m[32m                        "name": "Check Message-Text",[m
+[32m+[m[32m                        "order": 4,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "e95772d1-9919-4114-baf5-8168f86f51ee",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "a193f947-5c7d-4fad-9a96-a2615defd921",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Text",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        "operations": [],[m
+[32m+[m[32m                        "action": {[m
+[32m+[m[32m                            "id": "c31e1c5e-9482-4731-bb4e-3fbe938acd8f",[m
+[32m+[m[32m                            "type": "CONTINUE",[m
+[32m+[m[32m                            "parameters": {}[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        "id": "0830ba72-6dfb-4d4a-b598-fc944144cc8e",[m
+[32m+[m[32m                        "name": "Check Message-Headers",[m
+[32m+[m[32m                        "order": 5,[m
+[32m+[m[32m                        "condition_group": {[m
+[32m+[m[32m                            "id": "496dca64-c79d-49de-9377-129c29c2b63b",[m
+[32m+[m[32m                            "operator": "AND",[m
+[32m+[m[32m                            "conditions": [[m
+[32m+[m[32m                                {[m
+[32m+[m[32m                                    "id": "b30d6b3c-4492-4f4b-a818-e22b0b84d6f3",[m
+[32m+[m[32m                                    "left_type": "Parameter",[m
+[32m+[m[32m                                    "left_name": "Message-Headers",[m
+[32m+[m[32m                                    "operator": "Exists",[m
+[32m+[m[32m                                    "match_mode": "Any",[m
+[32m+[m[32m                                    "right_type": null,[m
+[32m+[m[32m                                    "right_value": null[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                            ][m
+[32m+[m[32m                        },[m
+[32m+[m[32m               

@@ -1,5 +1,5 @@
 import json
-
+from storage.json_storage import JsonStorage
 from configuration.models.firewall_config import FirewallConfiguration
 from configuration.services.ruleset_service import RulesetService
 from configuration.services.rule_service import RuleService
@@ -18,8 +18,11 @@ def test_operation_survives_version_commit_and_reload(
     version_repository = VersionRepository()
 
     version_service = VersionService(
-        repository=version_repository
+    repository=version_repository,
+    storage=JsonStorage(
+        folder=tmp_path / "versions"
     )
+)
 
     configuration = FirewallConfiguration()
 

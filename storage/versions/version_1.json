@@ -1,10 +1,10 @@
 {
-    "id": "3464c87b-ab0f-4e66-a2dd-bffe4f931c60",
+    "id": "c6a76084-20e3-403c-a8bf-afa01b5e98fa",
     "version": 1,
-    "name": "Base Version",
-    "description": null,
+    "name": "Persistent Version Check",
+    "description": "Verify real project storage",
     "parent_version_id": null,
-    "created_at": "2026-10-18T23:06:56.695729+00:00",
+    "created_at": "2026-10-19T00:48:27.246648+00:00",
     "status": "AVAILABLE",
     "configuration": {
         "rulesets": []

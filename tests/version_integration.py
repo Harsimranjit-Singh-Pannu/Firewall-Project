@@ -36,11 +36,11 @@ def build_configuration(
     return configuration
 
 
-def build_service():
+def build_service(storage_path=None):
     repository = VersionRepository()
 
     storage = JsonStorage(
-        STORAGE_PATH
+        storage_path or STORAGE_PATH
     )
 
     return VersionService(
@@ -53,9 +53,10 @@ class TestVersionRealStorage:
 
     def setup_method(self):
 
+        self.storage_path = None
         STORAGE_PATH.mkdir(
             parents=True,
-            exist_ok=True
+            exist_ok=True,
         )
 
         for file in STORAGE_PATH.glob(
@@ -72,9 +73,9 @@ class TestVersionRealStorage:
             file.unlink()
 
 
-    def test_create_versions_from_previous_version(self):
+    def test_create_versions_from_previous_version(self, tmp_path):
 
-        service = build_service()
+        service = build_service(tmp_path / "versions")
 
         # -------------------------------------------------
         # Version 1
@@ -518,12 +519,15 @@ class TestVersionRealStorage:
         assert len(
             service.list_versions()
         ) == 3
-    def test_full_version_branching_and_rollback(self):
+    def test_full_version_branching_and_rollback(self, tmp_path):
 
         repository = VersionRepository()
 
         service = VersionService(
-            repository=repository
+            repository=repository,
+            storage=JsonStorage(
+             folder=tmp_path / "versions"
+            )
         )
 
         # --------------------------------------------------
